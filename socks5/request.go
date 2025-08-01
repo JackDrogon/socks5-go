@@ -34,7 +34,16 @@ func NewRequest(conn io.ReadWriter) (*Request, error) {
 		return nil, fmt.Errorf("unsupported SOCKS version: %d", req.Version)
 	}
 
-	if req.Command != cmdConnect {
+	// RFC 1928: RSV field must be X'00'
+	if req.Reserved != 0x00 {
+		return nil, fmt.Errorf("invalid reserved field: expected 0x00, got 0x%02X", req.Reserved)
+	}
+
+	// Validate command type
+	switch req.Command {
+	case cmdConnect, cmdBind, cmdUDPAssociate:
+		// Valid commands
+	default:
 		return nil, fmt.Errorf("unsupported command: %d", req.Command)
 	}
 
@@ -83,6 +92,11 @@ func readAddrSpec(conn io.ReadWriter, addrType uint8) (*AddrSpec, error) {
 		}
 
 		domainLen := int(lenBuf[0])
+		// RFC 1928: Domain name length must be > 0
+		if domainLen == 0 {
+			return nil, fmt.Errorf("invalid domain name length: 0")
+		}
+		
 		domain := make([]byte, domainLen)
 		if _, err := io.ReadFull(conn, domain); err != nil {
 			return nil, fmt.Errorf("failed to read domain: %w", err)
