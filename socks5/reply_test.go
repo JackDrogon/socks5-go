@@ -12,7 +12,7 @@ func TestSendReplyWithTCPAddr(t *testing.T) {
 
 	// Test with IPv4 TCP address
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", "192.168.1.1:8080")
-	err := sendReply(&buf, repSuccess, tcpAddr)
+	err := sendReply(&buf, RepSuccess, tcpAddr)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestSendReplyWithTCPAddrIPv6(t *testing.T) {
 
 	// Test with IPv6 TCP address
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", "[::1]:8080")
-	err := sendReply(&buf, repSuccess, tcpAddr)
+	err := sendReply(&buf, RepSuccess, tcpAddr)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestSendReplyWithUDPAddr(t *testing.T) {
 
 	// Test with IPv4 UDP address
 	udpAddr, _ := net.ResolveUDPAddr("udp", "10.0.0.1:53")
-	err := sendReply(&buf, repSuccess, udpAddr)
+	err := sendReply(&buf, RepSuccess, udpAddr)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestSendReplyWithUDPAddrIPv6(t *testing.T) {
 
 	// Test with IPv6 UDP address
 	udpAddr, _ := net.ResolveUDPAddr("udp", "[::1]:53")
-	err := sendReply(&buf, repSuccess, udpAddr)
+	err := sendReply(&buf, RepSuccess, udpAddr)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestSendReplyWithUDPAddrIPv6(t *testing.T) {
 func TestSendReplyWithNilAddr(t *testing.T) {
 	var buf bytes.Buffer
 
-	err := sendReply(&buf, repServerFailure, nil)
+	err := sendReply(&buf, RepServerFailure, nil)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -142,15 +142,15 @@ func TestSendReplyAllReplyCodes(t *testing.T) {
 		repCode  uint8
 		expected uint8
 	}{
-		{"Success", repSuccess, 0x00},
-		{"Server Failure", repServerFailure, 0x01},
-		{"Not Allowed", repNotAllowed, 0x02},
-		{"Network Unreachable", repNetworkUnreachable, 0x03},
-		{"Host Unreachable", repHostUnreachable, 0x04},
-		{"Connection Refused", repConnectionRefused, 0x05},
-		{"TTL Expired", repTTLExpired, 0x06},
-		{"Command Not Supported", repCommandNotSupported, 0x07},
-		{"Address Not Supported", repAddressNotSupported, 0x08},
+		{"Success", RepSuccess, 0x00},
+		{"Server Failure", RepServerFailure, 0x01},
+		{"Not Allowed", RepNotAllowed, 0x02},
+		{"Network Unreachable", RepNetworkUnreachable, 0x03},
+		{"Host Unreachable", RepHostUnreachable, 0x04},
+		{"Connection Refused", RepConnectionRefused, 0x05},
+		{"TTL Expired", RepTTLExpired, 0x06},
+		{"Command Not Supported", RepCommandNotSupported, 0x07},
+		{"Address Not Supported", RepAddressNotSupported, 0x08},
 	}
 
 	for _, tc := range testCases {
@@ -168,8 +168,8 @@ func TestSendReplyAllReplyCodes(t *testing.T) {
 				t.Fatalf("Reply too short: %d bytes", len(reply))
 			}
 
-			if reply[0] != socks5Version {
-				t.Errorf("Version = 0x%02X, expected 0x%02X", reply[0], socks5Version)
+			if reply[0] != SOCKS5Version {
+				t.Errorf("Version = 0x%02X, expected 0x%02X", reply[0], SOCKS5Version)
 			}
 			if reply[1] != tc.expected {
 				t.Errorf("Reply code = 0x%02X, expected 0x%02X", reply[1], tc.expected)
@@ -191,7 +191,7 @@ func TestSendReplyUnsupportedAddrType(t *testing.T) {
 	var buf bytes.Buffer
 
 	addr := unsupportedAddr{}
-	err := sendReply(&buf, repSuccess, addr)
+	err := sendReply(&buf, RepSuccess, addr)
 	if err == nil {
 		t.Errorf("sendReply() should return error for unsupported address type")
 	}
@@ -220,7 +220,7 @@ func TestSendReplyPortEncoding(t *testing.T) {
 			tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("127.0.0.1:%d", tc.port))
 			tcpAddr.Port = tc.port // Set port directly
 
-			err := sendReply(&buf, repSuccess, tcpAddr)
+			err := sendReply(&buf, RepSuccess, tcpAddr)
 			if err != nil {
 				t.Fatalf("sendReply() returned error: %v", err)
 			}
@@ -242,7 +242,7 @@ func TestSendReplyIPv4Localhost(t *testing.T) {
 	var buf bytes.Buffer
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:1080")
 
-	err := sendReply(&buf, repSuccess, tcpAddr)
+	err := sendReply(&buf, RepSuccess, tcpAddr)
 	if err != nil {
 		t.Fatalf("sendReply() returned error: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestSendReplyWriteError(t *testing.T) {
 	writer := &errorWriter{shouldError: true}
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:1080")
 
-	err := sendReply(writer, repSuccess, tcpAddr)
+	err := sendReply(writer, RepSuccess, tcpAddr)
 	if err == nil {
 		t.Errorf("sendReply() should return error when writer fails")
 	}

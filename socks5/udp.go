@@ -46,11 +46,11 @@ func parseUDPHeader(data []byte) (*UDPHeader, error) {
 	var addrLen int
 
 	switch header.AddrType {
-	case atypeIPv4:
+	case AtypeIPv4:
 		addrLen = 4
-	case atypeIPv6:
+	case AtypeIPv6:
 		addrLen = 16
-	case atypeDomain:
+	case AtypeDomain:
 		if len(data) < offset+1 {
 			return nil, fmt.Errorf("invalid domain length")
 		}
@@ -79,11 +79,11 @@ func parseUDPHeader(data []byte) (*UDPHeader, error) {
 func buildUDPHeader(addrType uint8, addr []byte, port uint16, data []byte) []byte {
 	var headerLen int
 	switch addrType {
-	case atypeIPv4:
+	case AtypeIPv4:
 		headerLen = 4 + 4 + 2 // RSV + FRAG + ATYP + IPv4 + PORT
-	case atypeIPv6:
+	case AtypeIPv6:
 		headerLen = 4 + 16 + 2 // RSV + FRAG + ATYP + IPv6 + PORT
-	case atypeDomain:
+	case AtypeDomain:
 		headerLen = 4 + 1 + len(addr) + 2 // RSV + FRAG + ATYP + LEN + DOMAIN + PORT
 	}
 
@@ -104,7 +104,7 @@ func buildUDPHeader(addrType uint8, addr []byte, port uint16, data []byte) []byt
 	offset++
 
 	// Address
-	if addrType == atypeDomain {
+	if addrType == AtypeDomain {
 		packet[offset] = byte(len(addr))
 		offset++
 	}
@@ -126,9 +126,9 @@ func buildUDPHeader(addrType uint8, addr []byte, port uint16, data []byte) []byt
 func (h *UDPHeader) getDestinationAddress() string {
 	var addr string
 	switch h.AddrType {
-	case atypeIPv4, atypeIPv6:
+	case AtypeIPv4, AtypeIPv6:
 		addr = net.IP(h.DstAddr).String()
-	case atypeDomain:
+	case AtypeDomain:
 		addr = string(h.DstAddr)
 	}
 	return net.JoinHostPort(addr, strconv.Itoa(int(h.DstPort)))

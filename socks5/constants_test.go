@@ -10,26 +10,26 @@ func TestConstants(t *testing.T) {
 		constant uint8
 		expected uint8
 	}{
-		{"SOCKS5 Version", socks5Version, 0x05},
-		{"Auth Method No Auth", authMethodNoAuth, 0x00},
-		{"Auth Method GSSAPI", authMethodGSSAPI, 0x01},
-		{"Auth Method UserPass", authMethodUserPass, 0x02},
-		{"Auth Method No Acceptable", authMethodNoAcceptable, 0xFF},
-		{"Command Connect", cmdConnect, 0x01},
-		{"Command Bind", cmdBind, 0x02},
-		{"Command UDP Associate", cmdUDPAssociate, 0x03},
-		{"Address Type IPv4", atypeIPv4, 0x01},
-		{"Address Type Domain", atypeDomain, 0x03},
-		{"Address Type IPv6", atypeIPv6, 0x04},
-		{"Reply Success", repSuccess, 0x00},
-		{"Reply Server Failure", repServerFailure, 0x01},
-		{"Reply Not Allowed", repNotAllowed, 0x02},
-		{"Reply Network Unreachable", repNetworkUnreachable, 0x03},
-		{"Reply Host Unreachable", repHostUnreachable, 0x04},
-		{"Reply Connection Refused", repConnectionRefused, 0x05},
-		{"Reply TTL Expired", repTTLExpired, 0x06},
-		{"Reply Command Not Supported", repCommandNotSupported, 0x07},
-		{"Reply Address Not Supported", repAddressNotSupported, 0x08},
+		{"SOCKS5 Version", SOCKS5Version, 0x05},
+		{"Auth Method No Auth", AuthMethodNoAuth, 0x00},
+		{"Auth Method GSSAPI", AuthMethodGSSAPI, 0x01},
+		{"Auth Method UserPass", AuthMethodUserPass, 0x02},
+		{"Auth Method No Acceptable", AuthMethodNoAcceptable, 0xFF},
+		{"Command Connect", CmdConnect, 0x01},
+		{"Command Bind", CmdBind, 0x02},
+		{"Command UDP Associate", CmdUDPAssociate, 0x03},
+		{"Address Type IPv4", AtypeIPv4, 0x01},
+		{"Address Type Domain", AtypeDomain, 0x03},
+		{"Address Type IPv6", AtypeIPv6, 0x04},
+		{"Reply Success", RepSuccess, 0x00},
+		{"Reply Server Failure", RepServerFailure, 0x01},
+		{"Reply Not Allowed", RepNotAllowed, 0x02},
+		{"Reply Network Unreachable", RepNetworkUnreachable, 0x03},
+		{"Reply Host Unreachable", RepHostUnreachable, 0x04},
+		{"Reply Connection Refused", RepConnectionRefused, 0x05},
+		{"Reply TTL Expired", RepTTLExpired, 0x06},
+		{"Reply Command Not Supported", RepCommandNotSupported, 0x07},
+		{"Reply Address Not Supported", RepAddressNotSupported, 0x08},
 	}
 
 	for _, tt := range tests {
@@ -43,15 +43,15 @@ func TestConstants(t *testing.T) {
 
 func TestRFC1928Compliance(t *testing.T) {
 	// Test RFC 1928 compliance constants
-	if socks5Version != 0x05 {
-		t.Errorf("SOCKS version should be 0x05 per RFC 1928, got 0x%02X", socks5Version)
+	if SOCKS5Version != 0x05 {
+		t.Errorf("SOCKS version should be 0x05 per RFC 1928, got 0x%02X", SOCKS5Version)
 	}
 
 	// Test command constants per RFC 1928
 	commands := map[string]uint8{
-		"CONNECT":       cmdConnect,
-		"BIND":          cmdBind,
-		"UDP ASSOCIATE": cmdUDPAssociate,
+		"CONNECT":       CmdConnect,
+		"BIND":          CmdBind,
+		"UDP ASSOCIATE": CmdUDPAssociate,
 	}
 
 	expectedCommands := map[string]uint8{
@@ -68,9 +68,9 @@ func TestRFC1928Compliance(t *testing.T) {
 
 	// Test address type constants per RFC 1928
 	addressTypes := map[string]uint8{
-		"IPv4":   atypeIPv4,
-		"Domain": atypeDomain,
-		"IPv6":   atypeIPv6,
+		"IPv4":   AtypeIPv4,
+		"Domain": AtypeDomain,
+		"IPv6":   AtypeIPv6,
 	}
 
 	expectedAddressTypes := map[string]uint8{
@@ -87,15 +87,15 @@ func TestRFC1928Compliance(t *testing.T) {
 
 	// Test reply codes per RFC 1928
 	replyCodes := []uint8{
-		repSuccess,
-		repServerFailure,
-		repNotAllowed,
-		repNetworkUnreachable,
-		repHostUnreachable,
-		repConnectionRefused,
-		repTTLExpired,
-		repCommandNotSupported,
-		repAddressNotSupported,
+		RepSuccess,
+		RepServerFailure,
+		RepNotAllowed,
+		RepNetworkUnreachable,
+		RepHostUnreachable,
+		RepConnectionRefused,
+		RepTTLExpired,
+		RepCommandNotSupported,
+		RepAddressNotSupported,
 	}
 
 	expectedReplyCodes := []uint8{

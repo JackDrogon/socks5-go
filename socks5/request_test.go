@@ -24,17 +24,17 @@ func TestNewRequestValidConnect(t *testing.T) {
 		t.Fatalf("NewRequest() returned error: %v", err)
 	}
 
-	if req.Version != socks5Version {
-		t.Errorf("Version = %d, expected %d", req.Version, socks5Version)
+	if req.Version != SOCKS5Version {
+		t.Errorf("Version = %d, expected %d", req.Version, SOCKS5Version)
 	}
-	if req.Command != cmdConnect {
-		t.Errorf("Command = %d, expected %d", req.Command, cmdConnect)
+	if req.Command != CmdConnect {
+		t.Errorf("Command = %d, expected %d", req.Command, CmdConnect)
 	}
 	if req.Reserved != 0x00 {
 		t.Errorf("Reserved = %d, expected 0", req.Reserved)
 	}
-	if req.AddrType != atypeIPv4 {
-		t.Errorf("AddrType = %d, expected %d", req.AddrType, atypeIPv4)
+	if req.AddrType != AtypeIPv4 {
+		t.Errorf("AddrType = %d, expected %d", req.AddrType, AtypeIPv4)
 	}
 	if req.DestPort != 80 {
 		t.Errorf("DestPort = %d, expected 80", req.DestPort)
@@ -64,11 +64,11 @@ func TestNewRequestValidBind(t *testing.T) {
 		t.Fatalf("NewRequest() returned error: %v", err)
 	}
 
-	if req.Command != cmdBind {
-		t.Errorf("Command = %d, expected %d", req.Command, cmdBind)
+	if req.Command != CmdBind {
+		t.Errorf("Command = %d, expected %d", req.Command, CmdBind)
 	}
-	if req.AddrType != atypeIPv6 {
-		t.Errorf("AddrType = %d, expected %d", req.AddrType, atypeIPv6)
+	if req.AddrType != AtypeIPv6 {
+		t.Errorf("AddrType = %d, expected %d", req.AddrType, AtypeIPv6)
 	}
 	if req.DestPort != 443 {
 		t.Errorf("DestPort = %d, expected 443", req.DestPort)
@@ -98,11 +98,11 @@ func TestNewRequestValidUDPAssociate(t *testing.T) {
 		t.Fatalf("NewRequest() returned error: %v", err)
 	}
 
-	if req.Command != cmdUDPAssociate {
-		t.Errorf("Command = %d, expected %d", req.Command, cmdUDPAssociate)
+	if req.Command != CmdUDPAssociate {
+		t.Errorf("Command = %d, expected %d", req.Command, CmdUDPAssociate)
 	}
-	if req.AddrType != atypeDomain {
-		t.Errorf("AddrType = %d, expected %d", req.AddrType, atypeDomain)
+	if req.AddrType != AtypeDomain {
+		t.Errorf("AddrType = %d, expected %d", req.AddrType, AtypeDomain)
 	}
 	if req.DestPort != 80 {
 		t.Errorf("DestPort = %d, expected 80", req.DestPort)
@@ -196,7 +196,7 @@ func TestReadAddrSpecIPv4(t *testing.T) {
 	}
 
 	buf := bytes.NewBuffer(addrData)
-	spec, err := readAddrSpec(buf, atypeIPv4)
+	spec, err := readAddrSpec(buf, AtypeIPv4)
 	if err != nil {
 		t.Fatalf("readAddrSpec() returned error: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestReadAddrSpecIPv6(t *testing.T) {
 	}
 
 	buf := bytes.NewBuffer(addrData)
-	spec, err := readAddrSpec(buf, atypeIPv6)
+	spec, err := readAddrSpec(buf, AtypeIPv6)
 	if err != nil {
 		t.Fatalf("readAddrSpec() returned error: %v", err)
 	}
@@ -246,7 +246,7 @@ func TestReadAddrSpecDomain(t *testing.T) {
 	addrData = append(addrData, 0x00, 0x50) // Port 80
 
 	buf := bytes.NewBuffer(addrData)
-	spec, err := readAddrSpec(buf, atypeDomain)
+	spec, err := readAddrSpec(buf, AtypeDomain)
 	if err != nil {
 		t.Fatalf("readAddrSpec() returned error: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestReadAddrSpecDomainZeroLength(t *testing.T) {
 	}
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeDomain)
+	_, err := readAddrSpec(buf, AtypeDomain)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for zero domain length")
 	}
@@ -300,7 +300,7 @@ func TestReadAddrSpecShortIPv4(t *testing.T) {
 	addrData := []byte{192, 168} // Too short for IPv4
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeIPv4)
+	_, err := readAddrSpec(buf, AtypeIPv4)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for short IPv4 address")
 	}
@@ -310,7 +310,7 @@ func TestReadAddrSpecShortIPv6(t *testing.T) {
 	addrData := []byte{0x00, 0x00, 0x00, 0x00} // Too short for IPv6
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeIPv6)
+	_, err := readAddrSpec(buf, AtypeIPv6)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for short IPv6 address")
 	}
@@ -320,7 +320,7 @@ func TestReadAddrSpecShortDomain(t *testing.T) {
 	addrData := []byte{0x05, 't', 'e', 's'} // Domain length 5, but only 3 chars
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeDomain)
+	_, err := readAddrSpec(buf, AtypeDomain)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for short domain")
 	}
@@ -333,7 +333,7 @@ func TestReadAddrSpecShortPort(t *testing.T) {
 	}
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeIPv4)
+	_, err := readAddrSpec(buf, AtypeIPv4)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for short port")
 	}
@@ -343,7 +343,7 @@ func TestReadAddrSpecNoDomainLength(t *testing.T) {
 	addrData := []byte{} // Empty buffer
 
 	buf := bytes.NewBuffer(addrData)
-	_, err := readAddrSpec(buf, atypeDomain)
+	_, err := readAddrSpec(buf, AtypeDomain)
 	if err == nil {
 		t.Errorf("readAddrSpec() should return error for missing domain length")
 	}
@@ -433,9 +433,9 @@ func TestAllCommandTypesRFCCompliance(t *testing.T) {
 		command byte
 		valid   bool
 	}{
-		{"CONNECT", cmdConnect, true},
-		{"BIND", cmdBind, true},
-		{"UDP_ASSOCIATE", cmdUDPAssociate, true},
+		{"CONNECT", CmdConnect, true},
+		{"BIND", CmdBind, true},
+		{"UDP_ASSOCIATE", CmdUDPAssociate, true},
 		{"Invalid_0x00", 0x00, false},
 		{"Invalid_0x04", 0x04, false},
 		{"Invalid_0xFF", 0xFF, false},
@@ -484,7 +484,7 @@ func TestAllAddressTypesRFCCompliance(t *testing.T) {
 	}{
 		{
 			name:         "IPv4",
-			addrType:     atypeIPv4,
+			addrType:     AtypeIPv4,
 			addrData:     []byte{192, 168, 1, 1},
 			port:         []byte{0x00, 0x50},
 			valid:        true,
@@ -492,7 +492,7 @@ func TestAllAddressTypesRFCCompliance(t *testing.T) {
 		},
 		{
 			name:         "IPv6",
-			addrType:     atypeIPv6,
+			addrType:     AtypeIPv6,
 			addrData:     []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
 			port:         []byte{0x01, 0xBB},
 			valid:        true,
@@ -500,7 +500,7 @@ func TestAllAddressTypesRFCCompliance(t *testing.T) {
 		},
 		{
 			name:         "Domain",
-			addrType:     atypeDomain,
+			addrType:     AtypeDomain,
 			addrData:     append([]byte{0x0B}, []byte("example.com")...),
 			port:         []byte{0x00, 0x50},
 			valid:        true,
@@ -612,7 +612,7 @@ func TestDomainNameBoundaryConditionsRFCCompliance(t *testing.T) {
 				0x05,         // Version
 				0x01,         // Command (CONNECT)
 				0x00,         // Reserved
-				atypeDomain,  // Address type (Domain)
+				AtypeDomain,  // Address type (Domain)
 				tc.domainLen, // Domain length
 			}
 			data = append(data, tc.domain...)

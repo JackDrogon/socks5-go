@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// Authenticator defines the interface for SOCKS5 authentication methods
 type Authenticator interface {
 	GetCode() uint8
 	Authenticate(conn io.ReadWriter) error
@@ -16,10 +17,11 @@ type Authenticator interface {
 	UnwrapData(data []byte) ([]byte, error)
 }
 
+// NoAuthAuthenticator implements no authentication method (0x00)
 type NoAuthAuthenticator struct{}
 
 func (a NoAuthAuthenticator) GetCode() uint8 {
-	return authMethodNoAuth
+	return AuthMethodNoAuth
 }
 
 func (a NoAuthAuthenticator) Authenticate(conn io.ReadWriter) error {
@@ -38,14 +40,16 @@ func (a NoAuthAuthenticator) UnwrapData(data []byte) ([]byte, error) {
 	return data, nil // No encapsulation for no-auth
 }
 
+// UserPassAuthenticator implements username/password authentication method (0x02)
 type UserPassAuthenticator struct {
 	Credentials StaticCredentials
 }
 
+// StaticCredentials is a map of username to password for authentication
 type StaticCredentials map[string]string
 
 func (a UserPassAuthenticator) GetCode() uint8 {
-	return authMethodUserPass
+	return AuthMethodUserPass
 }
 
 func (a UserPassAuthenticator) Authenticate(conn io.ReadWriter) error {
@@ -104,6 +108,7 @@ func (a UserPassAuthenticator) UnwrapData(data []byte) ([]byte, error) {
 	return data, nil // No encapsulation for username/password
 }
 
+// GSSAPIAuthenticator implements GSSAPI authentication method (0x01)
 type GSSAPIAuthenticator struct {
 	// GSSAPI implementation would require additional dependencies
 	// For now, this is a placeholder that accepts any GSSAPI request
@@ -111,7 +116,7 @@ type GSSAPIAuthenticator struct {
 }
 
 func (a GSSAPIAuthenticator) GetCode() uint8 {
-	return authMethodGSSAPI
+	return AuthMethodGSSAPI
 }
 
 func (a GSSAPIAuthenticator) Authenticate(conn io.ReadWriter) error {

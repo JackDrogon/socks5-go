@@ -31,8 +31,8 @@ func TestParseUDPHeaderIPv4(t *testing.T) {
 	if header.Fragment != 0x00 {
 		t.Errorf("Fragment = 0x%02X, expected 0x00", header.Fragment)
 	}
-	if header.AddrType != atypeIPv4 {
-		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, atypeIPv4)
+	if header.AddrType != AtypeIPv4 {
+		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, AtypeIPv4)
 	}
 	if header.DstPort != 80 {
 		t.Errorf("DstPort = %d, expected 80", header.DstPort)
@@ -66,8 +66,8 @@ func TestParseUDPHeaderIPv6(t *testing.T) {
 		t.Fatalf("parseUDPHeader() returned error: %v", err)
 	}
 
-	if header.AddrType != atypeIPv6 {
-		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, atypeIPv6)
+	if header.AddrType != AtypeIPv6 {
+		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, AtypeIPv6)
 	}
 	if header.DstPort != 443 {
 		t.Errorf("DstPort = %d, expected 443", header.DstPort)
@@ -97,8 +97,8 @@ func TestParseUDPHeaderDomain(t *testing.T) {
 		t.Fatalf("parseUDPHeader() returned error: %v", err)
 	}
 
-	if header.AddrType != atypeDomain {
-		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, atypeDomain)
+	if header.AddrType != AtypeDomain {
+		t.Errorf("AddrType = 0x%02X, expected 0x%02X", header.AddrType, AtypeDomain)
 	}
 	if header.DstPort != 80 {
 		t.Errorf("DstPort = %d, expected 80", header.DstPort)
@@ -192,7 +192,7 @@ func TestBuildUDPHeaderIPv4(t *testing.T) {
 	port := uint16(80)
 	data := []byte("test data")
 
-	packet := buildUDPHeader(atypeIPv4, addr, port, data)
+	packet := buildUDPHeader(AtypeIPv4, addr, port, data)
 
 	expectedHeader := []byte{
 		0x00, 0x00, // Reserved
@@ -216,7 +216,7 @@ func TestBuildUDPHeaderIPv6(t *testing.T) {
 	port := uint16(443)
 	data := []byte("test")
 
-	packet := buildUDPHeader(atypeIPv6, addr, port, data)
+	packet := buildUDPHeader(AtypeIPv6, addr, port, data)
 
 	expectedHeader := []byte{
 		0x00, 0x00, // Reserved
@@ -240,7 +240,7 @@ func TestBuildUDPHeaderDomain(t *testing.T) {
 	port := uint16(80)
 	data := []byte("payload")
 
-	packet := buildUDPHeader(atypeDomain, addr, port, data)
+	packet := buildUDPHeader(AtypeDomain, addr, port, data)
 
 	expectedHeader := []byte{
 		0x00, 0x00, // Reserved
@@ -267,14 +267,14 @@ func TestUDPHeaderGetDestinationAddress(t *testing.T) {
 	}{
 		{
 			"IPv4",
-			atypeIPv4,
+			AtypeIPv4,
 			[]byte{192, 168, 1, 1},
 			80,
 			"192.168.1.1:80",
 		},
 		{
 			"IPv6",
-			atypeIPv6,
+			AtypeIPv6,
 			[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
 			443,
@@ -282,7 +282,7 @@ func TestUDPHeaderGetDestinationAddress(t *testing.T) {
 		},
 		{
 			"Domain",
-			atypeDomain,
+			AtypeDomain,
 			[]byte("example.com"),
 			8080,
 			"example.com:8080",
@@ -386,7 +386,7 @@ func TestBuildUDPHeaderPortEncoding(t *testing.T) {
 	for _, tc := range testPorts {
 		addr := []byte{127, 0, 0, 1}
 		data := []byte("test")
-		packet := buildUDPHeader(atypeIPv4, addr, tc.port, data)
+		packet := buildUDPHeader(AtypeIPv4, addr, tc.port, data)
 
 		// Port is at bytes 8-9 for IPv4
 		portBytes := packet[8:10]
@@ -464,7 +464,7 @@ func TestHandleUDPRelayDetailedPaths(t *testing.T) {
 		defer clientConn.Close()
 
 		// Scenario 1: Valid UDP packet
-		validHeader := buildUDPHeader(atypeIPv4, []byte{127, 0, 0, 1}, 80, []byte("test data"))
+		validHeader := buildUDPHeader(AtypeIPv4, []byte{127, 0, 0, 1}, 80, []byte("test data"))
 		clientConn.Write(validHeader)
 		time.Sleep(5 * time.Millisecond)
 
@@ -486,13 +486,13 @@ func TestHandleUDPRelayDetailedPaths(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 
 		// Scenario 4: Invalid destination address
-		invalidDestHeader := buildUDPHeader(atypeIPv4, []byte{255, 255, 255, 255}, 80, []byte("bad dest"))
+		invalidDestHeader := buildUDPHeader(AtypeIPv4, []byte{255, 255, 255, 255}, 80, []byte("bad dest"))
 		clientConn.Write(invalidDestHeader)
 		time.Sleep(5 * time.Millisecond)
 
 		// Scenario 5: Send multiple packets to create associations
 		for i := 0; i < 3; i++ {
-			header := buildUDPHeader(atypeIPv4, []byte{127, 0, 0, 1}, uint16(8080+i), []byte(fmt.Sprintf("packet %d", i)))
+			header := buildUDPHeader(AtypeIPv4, []byte{127, 0, 0, 1}, uint16(8080+i), []byte(fmt.Sprintf("packet %d", i)))
 			clientConn.Write(header)
 			time.Sleep(2 * time.Millisecond)
 		}
@@ -542,7 +542,7 @@ func TestHandleUDPRelayEncapsulatedPaths(t *testing.T) {
 		defer clientConn.Close()
 
 		// Create a proper SOCKS UDP header and encapsulate it
-		udpHeader := buildUDPHeader(atypeIPv4, []byte{127, 0, 0, 1}, 80, []byte("encapsulated data"))
+		udpHeader := buildUDPHeader(AtypeIPv4, []byte{127, 0, 0, 1}, 80, []byte("encapsulated data"))
 
 		// Wrap the UDP header using GSSAPI
 		wrappedData, err := auth.WrapData(udpHeader)
@@ -784,21 +784,21 @@ func TestUDPAddressTypesRFCCompliance(t *testing.T) {
 	}{
 		{
 			name:         "IPv4 address",
-			addrType:     atypeIPv4,
+			addrType:     AtypeIPv4,
 			addrData:     []byte{192, 168, 1, 1, 0x00, 0x50},
 			valid:        true,
 			expectedAddr: "192.168.1.1:80",
 		},
 		{
 			name:         "IPv6 address",
-			addrType:     atypeIPv6,
+			addrType:     AtypeIPv6,
 			addrData:     append([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, []byte{0x01, 0xBB}...),
 			valid:        true,
 			expectedAddr: "[::1]:443",
 		},
 		{
 			name:         "Domain name",
-			addrType:     atypeDomain,
+			addrType:     AtypeDomain,
 			addrData:     append([]byte{0x0B}, append([]byte("example.com"), []byte{0x00, 0x50}...)...),
 			valid:        true,
 			expectedAddr: "example.com:80",

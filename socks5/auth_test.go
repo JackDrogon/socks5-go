@@ -12,8 +12,8 @@ func TestNoAuthAuthenticator(t *testing.T) {
 	auth := NoAuthAuthenticator{}
 
 	// Test GetCode
-	if auth.GetCode() != authMethodNoAuth {
-		t.Errorf("NoAuthAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), authMethodNoAuth)
+	if auth.GetCode() != AuthMethodNoAuth {
+		t.Errorf("NoAuthAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), AuthMethodNoAuth)
 	}
 
 	// Test Authenticate
@@ -56,8 +56,8 @@ func TestUserPassAuthenticator(t *testing.T) {
 	}
 
 	// Test GetCode
-	if auth.GetCode() != authMethodUserPass {
-		t.Errorf("UserPassAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), authMethodUserPass)
+	if auth.GetCode() != AuthMethodUserPass {
+		t.Errorf("UserPassAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), AuthMethodUserPass)
 	}
 
 	// Test SupportsEncapsulation
@@ -198,8 +198,8 @@ func TestGSSAPIAuthenticator(t *testing.T) {
 	auth := GSSAPIAuthenticator{}
 
 	// Test GetCode
-	if auth.GetCode() != authMethodGSSAPI {
-		t.Errorf("GSSAPIAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), authMethodGSSAPI)
+	if auth.GetCode() != AuthMethodGSSAPI {
+		t.Errorf("GSSAPIAuthenticator.GetCode() = %d, expected %d", auth.GetCode(), AuthMethodGSSAPI)
 	}
 
 	// Test SupportsEncapsulation

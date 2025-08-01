@@ -1,28 +1,28 @@
 package socks5
 
 const (
-	socks5Version = 0x05
+	SOCKS5Version = 0x05
 
-	authMethodNoAuth       = 0x00
-	authMethodGSSAPI       = 0x01
-	authMethodUserPass     = 0x02
-	authMethodNoAcceptable = 0xFF
+	AuthMethodNoAuth       = 0x00
+	AuthMethodGSSAPI       = 0x01
+	AuthMethodUserPass     = 0x02
+	AuthMethodNoAcceptable = 0xFF
 
-	cmdConnect      = 0x01
-	cmdBind         = 0x02
-	cmdUDPAssociate = 0x03
+	CmdConnect      = 0x01
+	CmdBind         = 0x02
+	CmdUDPAssociate = 0x03
 
-	atypeIPv4   = 0x01
-	atypeDomain = 0x03
-	atypeIPv6   = 0x04
+	AtypeIPv4   = 0x01
+	AtypeDomain = 0x03
+	AtypeIPv6   = 0x04
 
-	repSuccess             = 0x00
-	repServerFailure       = 0x01
-	repNotAllowed          = 0x02
-	repNetworkUnreachable  = 0x03
-	repHostUnreachable     = 0x04
-	repConnectionRefused   = 0x05
-	repTTLExpired          = 0x06
-	repCommandNotSupported = 0x07
-	repAddressNotSupported = 0x08
+	RepSuccess             = 0x00
+	RepServerFailure       = 0x01
+	RepNotAllowed          = 0x02
+	RepNetworkUnreachable  = 0x03
+	RepHostUnreachable     = 0x04
+	RepConnectionRefused   = 0x05
+	RepTTLExpired          = 0x06
+	RepCommandNotSupported = 0x07
+	RepAddressNotSupported = 0x08
 )

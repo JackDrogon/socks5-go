@@ -27,8 +27,8 @@ func TestNewServerDefaults(t *testing.T) {
 		t.Errorf("Default auth methods length = %d, expected 1", len(server.config.AuthMethods))
 	}
 
-	if server.config.AuthMethods[0].GetCode() != authMethodNoAuth {
-		t.Errorf("Default auth method = %d, expected %d", server.config.AuthMethods[0].GetCode(), authMethodNoAuth)
+	if server.config.AuthMethods[0].GetCode() != AuthMethodNoAuth {
+		t.Errorf("Default auth method = %d, expected %d", server.config.AuthMethods[0].GetCode(), AuthMethodNoAuth)
 	}
 
 	if server.config.Dial == nil {
@@ -63,7 +63,7 @@ func TestNewServerCustomConfig(t *testing.T) {
 		t.Errorf("Auth methods map length = %d, expected 1", len(server.authMethods))
 	}
 
-	if _, exists := server.authMethods[authMethodUserPass]; !exists {
+	if _, exists := server.authMethods[AuthMethodUserPass]; !exists {
 		t.Errorf("UserPass auth method not found in server auth methods")
 	}
 }
@@ -97,7 +97,7 @@ func TestServerAuthentication(t *testing.T) {
 		t.Fatalf("authenticate() returned error: %v", err)
 	}
 
-	if authenticator.GetCode() != authMethodNoAuth {
+	if authenticator.GetCode() != AuthMethodNoAuth {
 		t.Errorf("Expected no-auth authenticator, got %d", authenticator.GetCode())
 	}
 
@@ -193,12 +193,12 @@ func TestMapNetworkError(t *testing.T) {
 		errorStr string
 		expected uint8
 	}{
-		{"network is unreachable", repNetworkUnreachable},
-		{"no such host", repHostUnreachable},
-		{"connection refused", repConnectionRefused},
-		{"timeout", repTTLExpired},
-		{"permission denied", repNotAllowed},
-		{"unknown error", repServerFailure},
+		{"network is unreachable", RepNetworkUnreachable},
+		{"no such host", RepHostUnreachable},
+		{"connection refused", RepConnectionRefused},
+		{"timeout", RepTTLExpired},
+		{"permission denied", RepNotAllowed},
+		{"unknown error", RepServerFailure},
 	}
 
 	for _, tc := range testCases {
@@ -213,8 +213,8 @@ func TestMapNetworkError(t *testing.T) {
 
 	// Test nil error
 	result := server.mapNetworkError(nil)
-	if result != repSuccess {
-		t.Errorf("mapNetworkError(nil) = %d, expected %d", result, repSuccess)
+	if result != RepSuccess {
+		t.Errorf("mapNetworkError(nil) = %d, expected %d", result, RepSuccess)
 	}
 }
 
@@ -225,11 +225,11 @@ func TestMapRequestError(t *testing.T) {
 		errorStr string
 		expected uint8
 	}{
-		{"unsupported command", repCommandNotSupported},
-		{"unsupported address type", repAddressNotSupported},
-		{"unsupported socks version", repServerFailure},
-		{"invalid reserved field", repServerFailure},
-		{"unknown error", repServerFailure},
+		{"unsupported command", RepCommandNotSupported},
+		{"unsupported address type", RepAddressNotSupported},
+		{"unsupported socks version", RepServerFailure},
+		{"invalid reserved field", RepServerFailure},
+		{"unknown error", RepServerFailure},
 	}
 
 	for _, tc := range testCases {
@@ -244,8 +244,8 @@ func TestMapRequestError(t *testing.T) {
 
 	// Test nil error
 	result := server.mapRequestError(nil)
-	if result != repSuccess {
-		t.Errorf("mapRequestError(nil) = %d, expected %d", result, repSuccess)
+	if result != RepSuccess {
+		t.Errorf("mapRequestError(nil) = %d, expected %d", result, RepSuccess)
 	}
 }
 
@@ -389,8 +389,8 @@ func TestHandleConnectAccessDenied(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdConnect,
-		AddrType: atypeIPv4,
+		Command:  CmdConnect,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:80",
 	}
 
@@ -404,9 +404,9 @@ func TestHandleConnectAccessDenied(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	// Check for repNotAllowed in response
-	if conn.writeData[1] != repNotAllowed {
-		t.Errorf("Expected repNotAllowed (0x%02X), got 0x%02X", repNotAllowed, conn.writeData[1])
+	// Check for RepNotAllowed in response
+	if conn.writeData[1] != RepNotAllowed {
+		t.Errorf("Expected RepNotAllowed (0x%02X), got 0x%02X", RepNotAllowed, conn.writeData[1])
 	}
 }
 
@@ -417,8 +417,8 @@ func TestHandleBindAccessDenied(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdBind,
-		AddrType: atypeIPv4,
+		Command:  CmdBind,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:80",
 	}
 
@@ -432,8 +432,8 @@ func TestHandleBindAccessDenied(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	if conn.writeData[1] != repNotAllowed {
-		t.Errorf("Expected repNotAllowed (0x%02X), got 0x%02X", repNotAllowed, conn.writeData[1])
+	if conn.writeData[1] != RepNotAllowed {
+		t.Errorf("Expected RepNotAllowed (0x%02X), got 0x%02X", RepNotAllowed, conn.writeData[1])
 	}
 }
 
@@ -444,8 +444,8 @@ func TestHandleUDPAssociateAccessDenied(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdUDPAssociate,
-		AddrType: atypeIPv4,
+		Command:  CmdUDPAssociate,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:0",
 	}
 
@@ -459,8 +459,8 @@ func TestHandleUDPAssociateAccessDenied(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	if conn.writeData[1] != repNotAllowed {
-		t.Errorf("Expected repNotAllowed (0x%02X), got 0x%02X", repNotAllowed, conn.writeData[1])
+	if conn.writeData[1] != RepNotAllowed {
+		t.Errorf("Expected RepNotAllowed (0x%02X), got 0x%02X", RepNotAllowed, conn.writeData[1])
 	}
 }
 
@@ -507,8 +507,8 @@ func TestHandleConnectionInvalidCommand(t *testing.T) {
 
 	// Find the command response (after auth response)
 	commandResponse := conn.writeData[2:] // Skip auth response
-	if len(commandResponse) >= 2 && commandResponse[1] != repCommandNotSupported {
-		t.Errorf("Expected repCommandNotSupported (0x%02X), got 0x%02X", repCommandNotSupported, commandResponse[1])
+	if len(commandResponse) >= 2 && commandResponse[1] != RepCommandNotSupported {
+		t.Errorf("Expected RepCommandNotSupported (0x%02X), got 0x%02X", RepCommandNotSupported, commandResponse[1])
 	}
 }
 
@@ -594,8 +594,8 @@ func TestHandleConnectSuccessful(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdConnect,
-		AddrType: atypeIPv4,
+		Command:  CmdConnect,
+		AddrType: AtypeIPv4,
 		RealDest: targetAddr.String(),
 	}
 
@@ -620,8 +620,8 @@ func TestHandleConnectSuccessful(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	if conn.writeData[1] != repSuccess {
-		t.Errorf("Expected repSuccess (0x%02X), got 0x%02X", repSuccess, conn.writeData[1])
+	if conn.writeData[1] != RepSuccess {
+		t.Errorf("Expected RepSuccess (0x%02X), got 0x%02X", RepSuccess, conn.writeData[1])
 	}
 }
 
@@ -635,8 +635,8 @@ func TestHandleConnectDialFailure(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdConnect,
-		AddrType: atypeIPv4,
+		Command:  CmdConnect,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:99999", // Non-existent port
 	}
 
@@ -650,8 +650,8 @@ func TestHandleConnectDialFailure(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	if conn.writeData[1] != repConnectionRefused {
-		t.Errorf("Expected repConnectionRefused (0x%02X), got 0x%02X", repConnectionRefused, conn.writeData[1])
+	if conn.writeData[1] != RepConnectionRefused {
+		t.Errorf("Expected RepConnectionRefused (0x%02X), got 0x%02X", RepConnectionRefused, conn.writeData[1])
 	}
 }
 
@@ -662,8 +662,8 @@ func TestHandleBindSuccess(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdBind,
-		AddrType: atypeIPv4,
+		Command:  CmdBind,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:0", // Any port
 	}
 
@@ -693,8 +693,8 @@ func TestHandleBindSuccess(t *testing.T) {
 		t.Fatalf("Expected server to write first bind response")
 	}
 
-	if repCode != repSuccess {
-		t.Errorf("Expected repSuccess (0x%02X), got 0x%02X", repSuccess, repCode)
+	if repCode != RepSuccess {
+		t.Errorf("Expected RepSuccess (0x%02X), got 0x%02X", RepSuccess, repCode)
 	}
 }
 
@@ -705,8 +705,8 @@ func TestHandleUDPAssociateSuccess(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdUDPAssociate,
-		AddrType: atypeIPv4,
+		Command:  CmdUDPAssociate,
+		AddrType: AtypeIPv4,
 		RealDest: "0.0.0.0:0", // Any address/port for UDP ASSOCIATE
 	}
 
@@ -736,8 +736,8 @@ func TestHandleUDPAssociateSuccess(t *testing.T) {
 		t.Fatalf("Expected server to write UDP associate response")
 	}
 
-	if repCode != repSuccess {
-		t.Errorf("Expected repSuccess (0x%02X), got 0x%02X", repSuccess, repCode)
+	if repCode != RepSuccess {
+		t.Errorf("Expected RepSuccess (0x%02X), got 0x%02X", RepSuccess, repCode)
 	}
 
 	// Close the connection to stop the handler
@@ -765,8 +765,8 @@ func TestHandleBindListenFailure(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdBind,
-		AddrType: atypeIPv4,
+		Command:  CmdBind,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:0", // Valid request
 	}
 
@@ -796,8 +796,8 @@ func TestHandleBindListenFailure(t *testing.T) {
 		t.Fatalf("Expected server to write response")
 	}
 
-	if repCode != repSuccess {
-		t.Errorf("Expected repSuccess (0x%02X), got 0x%02X", repSuccess, repCode)
+	if repCode != RepSuccess {
+		t.Errorf("Expected RepSuccess (0x%02X), got 0x%02X", RepSuccess, repCode)
 	}
 }
 
@@ -809,8 +809,8 @@ func TestHandleUDPAssociateResolveFailure(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdUDPAssociate,
-		AddrType: atypeIPv4,
+		Command:  CmdUDPAssociate,
+		AddrType: AtypeIPv4,
 		RealDest: "0.0.0.0:0",
 	}
 
@@ -913,8 +913,8 @@ func TestHandleConnectSendReplyError(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdConnect,
-		AddrType: atypeIPv4,
+		Command:  CmdConnect,
+		AddrType: AtypeIPv4,
 		RealDest: targetAddr.String(),
 	}
 
@@ -950,8 +950,8 @@ func TestHandleBindComplete(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdBind,
-		AddrType: atypeIPv4,
+		Command:  CmdBind,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:0",
 	}
 
@@ -1007,8 +1007,8 @@ func TestHandleBindWriteError(t *testing.T) {
 	server, _ := New(config)
 
 	req := &Request{
-		Command:  cmdBind,
-		AddrType: atypeIPv4,
+		Command:  CmdBind,
+		AddrType: AtypeIPv4,
 		RealDest: "127.0.0.1:0",
 	}
 
@@ -1238,8 +1238,8 @@ func TestAuthenticateInvalidSOCKSVersion(t *testing.T) {
 			// Should send rejection response
 			if len(conn.writeData) < 2 {
 				t.Errorf("Expected server to send rejection response")
-			} else if conn.writeData[0] != socks5Version || conn.writeData[1] != authMethodNoAcceptable {
-				t.Errorf("Expected rejection response [0x05, 0xFF], got [0x%02X, 0x%02X]", 
+			} else if conn.writeData[0] != SOCKS5Version || conn.writeData[1] != AuthMethodNoAcceptable {
+				t.Errorf("Expected rejection response [0x05, 0xFF], got [0x%02X, 0x%02X]",
 					conn.writeData[0], conn.writeData[1])
 			}
 		})
@@ -1267,7 +1267,7 @@ func TestAuthenticateNMethodsZero(t *testing.T) {
 	// Should send rejection response
 	if len(conn.writeData) < 2 {
 		t.Errorf("Expected server to send rejection response")
-	} else if conn.writeData[1] != authMethodNoAcceptable {
+	} else if conn.writeData[1] != AuthMethodNoAcceptable {
 		t.Errorf("Expected rejection response with code 0xFF, got 0x%02X", conn.writeData[1])
 	}
 }
@@ -1275,18 +1275,18 @@ func TestAuthenticateNMethodsZero(t *testing.T) {
 func TestGSSAPIAuthenticatorIntegration(t *testing.T) {
 	// Test that GSSAPI authenticator can be used in server config
 	gssapiAuth := GSSAPIAuthenticator{AcceptAll: true}
-	
+
 	config := &Config{
 		AuthMethods: []Authenticator{gssapiAuth},
 	}
-	
+
 	server, err := New(config)
 	if err != nil {
 		t.Fatalf("Failed to create server with GSSAPI auth: %v", err)
 	}
 
 	// Verify GSSAPI is registered
-	if _, ok := server.authMethods[authMethodGSSAPI]; !ok {
+	if _, ok := server.authMethods[AuthMethodGSSAPI]; !ok {
 		t.Errorf("GSSAPI authenticator not registered in server")
 	}
 
@@ -1296,32 +1296,32 @@ func TestGSSAPIAuthenticatorIntegration(t *testing.T) {
 		0x01, // 1 method
 		0x01, // GSSAPI method
 	}
-	
+
 	// Add mock GSSAPI token that the authenticator will try to read
 	gssapiToken := []byte("mock_gssapi_token_data")
 	authRequest = append(authRequest, gssapiToken...)
 
 	conn := &mockConn{readData: authRequest}
 	auth, err := server.authenticate(conn)
-	
+
 	if err != nil {
 		t.Errorf("GSSAPI authentication failed: %v", err)
 	}
 
 	if auth == nil {
 		t.Errorf("Expected authenticator to be returned")
-	} else if auth.GetCode() != authMethodGSSAPI {
-		t.Errorf("Expected GSSAPI authenticator (code %d), got code %d", authMethodGSSAPI, auth.GetCode())
+	} else if auth.GetCode() != AuthMethodGSSAPI {
+		t.Errorf("Expected GSSAPI authenticator (code %d), got code %d", AuthMethodGSSAPI, auth.GetCode())
 	}
 }
 
 func TestRequestValidationReservedField(t *testing.T) {
 	// Test that non-zero reserved field is rejected
 	requestData := []byte{
-		0x05, // Version
-		0x01, // Command (CONNECT)
-		0x01, // Reserved (should be 0x00) - THIS IS THE BUG WE'RE TESTING
-		0x01, // Address type (IPv4)
+		0x05,         // Version
+		0x01,         // Command (CONNECT)
+		0x01,         // Reserved (should be 0x00) - THIS IS THE BUG WE'RE TESTING
+		0x01,         // Address type (IPv4)
 		127, 0, 0, 1, // IPv4 address (127.0.0.1)
 		0x00, 0x50, // Port 80
 	}
@@ -1341,10 +1341,10 @@ func TestRequestValidationReservedField(t *testing.T) {
 func TestRequestValidationUnsupportedCommand(t *testing.T) {
 	// Test that unsupported commands are rejected
 	requestData := []byte{
-		0x05, // Version
-		0x99, // Command (unsupported)
-		0x00, // Reserved
-		0x01, // Address type (IPv4)
+		0x05,         // Version
+		0x99,         // Command (unsupported)
+		0x00,         // Reserved
+		0x01,         // Address type (IPv4)
 		127, 0, 0, 1, // IPv4 address (127.0.0.1)
 		0x00, 0x50, // Port 80
 	}
@@ -1364,10 +1364,10 @@ func TestRequestValidationUnsupportedCommand(t *testing.T) {
 func TestRequestValidationUnsupportedAddressType(t *testing.T) {
 	// Test that unsupported address types are rejected
 	requestData := []byte{
-		0x05, // Version
-		0x01, // Command (CONNECT)
-		0x00, // Reserved
-		0x99, // Address type (unsupported)
+		0x05,         // Version
+		0x01,         // Command (CONNECT)
+		0x00,         // Reserved
+		0x99,         // Address type (unsupported)
 		127, 0, 0, 1, // Address data
 		0x00, 0x50, // Port 80
 	}
@@ -1387,11 +1387,11 @@ func TestRequestValidationUnsupportedAddressType(t *testing.T) {
 func TestDomainNameZeroLength(t *testing.T) {
 	// Test that zero-length domain names are rejected
 	requestData := []byte{
-		0x05, // Version
-		0x01, // Command (CONNECT)
-		0x00, // Reserved
-		0x03, // Address type (Domain)
-		0x00, // Domain length (0 - invalid!)
+		0x05,       // Version
+		0x01,       // Command (CONNECT)
+		0x00,       // Reserved
+		0x03,       // Address type (Domain)
+		0x00,       // Domain length (0 - invalid!)
 		0x00, 0x50, // Port 80
 	}
 
@@ -1414,13 +1414,13 @@ func TestMapNetworkErrorCoverage(t *testing.T) {
 		errorMsg     string
 		expectedCode uint8
 	}{
-		{"network is unreachable", repNetworkUnreachable},
-		{"no such host", repHostUnreachable},
-		{"connection refused", repConnectionRefused},
-		{"timeout", repTTLExpired},
-		{"permission denied", repNotAllowed},
-		{"some other error", repServerFailure},
-		{"", repSuccess}, // nil error case
+		{"network is unreachable", RepNetworkUnreachable},
+		{"no such host", RepHostUnreachable},
+		{"connection refused", RepConnectionRefused},
+		{"timeout", RepTTLExpired},
+		{"permission denied", RepNotAllowed},
+		{"some other error", RepServerFailure},
+		{"", RepSuccess}, // nil error case
 	}
 
 	for _, tc := range testCases {
@@ -1443,12 +1443,12 @@ func TestMapRequestErrorCoverage(t *testing.T) {
 		errorMsg     string
 		expectedCode uint8
 	}{
-		{"unsupported command", repCommandNotSupported},
-		{"unsupported address type", repAddressNotSupported},
-		{"unsupported socks version", repServerFailure},
-		{"invalid reserved field", repServerFailure},
-		{"some other error", repServerFailure},
-		{"", repSuccess}, // nil error case
+		{"unsupported command", RepCommandNotSupported},
+		{"unsupported address type", RepAddressNotSupported},
+		{"unsupported socks version", RepServerFailure},
+		{"invalid reserved field", RepServerFailure},
+		{"some other error", RepServerFailure},
+		{"", RepSuccess}, // nil error case
 	}
 
 	for _, tc := range testCases {

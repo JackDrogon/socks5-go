@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// Request represents a SOCKS5 client request
 type Request struct {
 	Version  uint8
 	Command  uint8
@@ -17,6 +18,7 @@ type Request struct {
 	RealDest string
 }
 
+// NewRequest parses a SOCKS5 request from the given connection
 func NewRequest(conn io.ReadWriter) (*Request, error) {
 	header := make([]byte, 4)
 	if _, err := io.ReadFull(conn, header); err != nil {
@@ -30,7 +32,7 @@ func NewRequest(conn io.ReadWriter) (*Request, error) {
 		AddrType: header[3],
 	}
 
-	if req.Version != socks5Version {
+	if req.Version != SOCKS5Version {
 		return nil, fmt.Errorf("unsupported SOCKS version: %d", req.Version)
 	}
 
@@ -41,7 +43,7 @@ func NewRequest(conn io.ReadWriter) (*Request, error) {
 
 	// Validate command type
 	switch req.Command {
-	case cmdConnect, cmdBind, cmdUDPAssociate:
+	case CmdConnect, CmdBind, CmdUDPAssociate:
 		// Valid commands
 	default:
 		return nil, fmt.Errorf("unsupported command: %d", req.Command)
@@ -59,6 +61,7 @@ func NewRequest(conn io.ReadWriter) (*Request, error) {
 	return req, nil
 }
 
+// AddrSpec represents an address specification in SOCKS5 protocol
 type AddrSpec struct {
 	IP      []byte
 	Port    uint16
@@ -69,7 +72,7 @@ func readAddrSpec(conn io.ReadWriter, addrType uint8) (*AddrSpec, error) {
 	spec := &AddrSpec{}
 
 	switch addrType {
-	case atypeIPv4:
+	case AtypeIPv4:
 		addr := make([]byte, 4)
 		if _, err := io.ReadFull(conn, addr); err != nil {
 			return nil, fmt.Errorf("failed to read IPv4 address: %w", err)
@@ -77,7 +80,7 @@ func readAddrSpec(conn io.ReadWriter, addrType uint8) (*AddrSpec, error) {
 		spec.IP = addr
 		spec.Address = net.IP(addr).String()
 
-	case atypeIPv6:
+	case AtypeIPv6:
 		addr := make([]byte, 16)
 		if _, err := io.ReadFull(conn, addr); err != nil {
 			return nil, fmt.Errorf("failed to read IPv6 address: %w", err)
@@ -85,7 +88,7 @@ func readAddrSpec(conn io.ReadWriter, addrType uint8) (*AddrSpec, error) {
 		spec.IP = addr
 		spec.Address = net.IP(addr).String()
 
-	case atypeDomain:
+	case AtypeDomain:
 		lenBuf := make([]byte, 1)
 		if _, err := io.ReadFull(conn, lenBuf); err != nil {
 			return nil, fmt.Errorf("failed to read domain length: %w", err)

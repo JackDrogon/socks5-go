@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Config holds the configuration options for a SOCKS5 server
 type Config struct {
 	AuthMethods   []Authenticator
 	Logger        *log.Logger
@@ -16,11 +17,13 @@ type Config struct {
 	AccessControl AccessControl
 }
 
+// Server represents a SOCKS5 proxy server
 type Server struct {
 	config      *Config
 	authMethods map[uint8]Authenticator
 }
 
+// New creates a new SOCKS5 server with the given configuration
 func New(config *Config) (*Server, error) {
 	if config == nil {
 		config = &Config{}
@@ -83,14 +86,14 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	switch request.Command {
-	case cmdConnect:
+	case CmdConnect:
 		s.handleConnect(conn, request, authenticator)
-	case cmdBind:
+	case CmdBind:
 		s.handleBind(conn, request, authenticator)
-	case cmdUDPAssociate:
+	case CmdUDPAssociate:
 		s.handleUDPAssociate(conn, request, authenticator)
 	default:
-		sendReply(conn, repCommandNotSupported, nil)
+		sendReply(conn, RepCommandNotSupported, nil)
 	}
 }
 
@@ -101,10 +104,10 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 	}
 
 	// RFC 1928: Check SOCKS version first
-	if header[0] != socks5Version {
+	if header[0] != SOCKS5Version {
 		s.logf("Unsupported SOCKS version: %d", header[0])
 		// Send error response and close connection immediately
-		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
+		conn.Write([]byte{SOCKS5Version, AuthMethodNoAcceptable})
 		return nil, fmt.Errorf("unsupported SOCKS version: %d", header[0])
 	}
 
@@ -112,12 +115,12 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 	// RFC 1928: NMETHODS must be 1-255, 0 is invalid
 	if numMethods == 0 {
 		s.logf("Invalid NMETHODS value: 0")
-		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
+		conn.Write([]byte{SOCKS5Version, AuthMethodNoAcceptable})
 		return nil, fmt.Errorf("invalid NMETHODS value: 0")
 	}
 	if numMethods > 255 {
 		s.logf("Invalid NMETHODS value: %d (too large)", numMethods)
-		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
+		conn.Write([]byte{SOCKS5Version, AuthMethodNoAcceptable})
 		return nil, fmt.Errorf("invalid NMETHODS value: %d (must be 1-255)", numMethods)
 	}
 
@@ -129,7 +132,7 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 	// RFC 1928: Try methods in order of preference
 	for _, method := range methods {
 		if authenticator, ok := s.authMethods[method]; ok {
-			if _, err := conn.Write([]byte{socks5Version, method}); err != nil {
+			if _, err := conn.Write([]byte{SOCKS5Version, method}); err != nil {
 				return nil, fmt.Errorf("failed to write auth response: %w", err)
 			}
 			if err := authenticator.Authenticate(conn); err != nil {
@@ -141,7 +144,7 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 	}
 
 	// No acceptable methods found
-	if _, err := conn.Write([]byte{socks5Version, authMethodNoAcceptable}); err != nil {
+	if _, err := conn.Write([]byte{SOCKS5Version, AuthMethodNoAcceptable}); err != nil {
 		return nil, fmt.Errorf("failed to write no acceptable methods: %w", err)
 	}
 	return nil, fmt.Errorf("no acceptable authentication methods")
@@ -151,7 +154,7 @@ func (s *Server) handleConnect(conn net.Conn, req *Request, auth Authenticator) 
 	// Check access control
 	if !s.config.AccessControl.Allow(conn.RemoteAddr(), req.RealDest) {
 		s.logf("Connection to %s denied by access control from %s", req.RealDest, conn.RemoteAddr())
-		sendReply(conn, repNotAllowed, nil)
+		sendReply(conn, RepNotAllowed, nil)
 		time.AfterFunc(10*time.Second, func() {
 			conn.Close()
 		})
@@ -174,7 +177,7 @@ func (s *Server) handleConnect(conn net.Conn, req *Request, auth Authenticator) 
 	}
 	defer target.Close()
 
-	if err := sendReply(conn, repSuccess, target.LocalAddr()); err != nil {
+	if err := sendReply(conn, RepSuccess, target.LocalAddr()); err != nil {
 		s.logf("Failed to send reply: %v", err)
 		return
 	}
@@ -186,7 +189,7 @@ func (s *Server) handleConnect(conn net.Conn, req *Request, auth Authenticator) 
 // mapNetworkError maps Go network errors to SOCKS5 reply codes
 func (s *Server) mapNetworkError(err error) uint8 {
 	if err == nil {
-		return repSuccess
+		return RepSuccess
 	}
 
 	errStr := err.Error()
@@ -195,38 +198,38 @@ func (s *Server) mapNetworkError(err error) uint8 {
 	errStrLower := strings.ToLower(errStr)
 	switch {
 	case strings.Contains(errStrLower, "network is unreachable"):
-		return repNetworkUnreachable
+		return RepNetworkUnreachable
 	case strings.Contains(errStrLower, "no such host"):
-		return repHostUnreachable
+		return RepHostUnreachable
 	case strings.Contains(errStrLower, "connection refused"):
-		return repConnectionRefused
+		return RepConnectionRefused
 	case strings.Contains(errStrLower, "timeout"):
-		return repTTLExpired
+		return RepTTLExpired
 	case strings.Contains(errStrLower, "permission denied"):
-		return repNotAllowed
+		return RepNotAllowed
 	default:
-		return repServerFailure
+		return RepServerFailure
 	}
 }
 
 // mapRequestError maps request parsing errors to SOCKS5 reply codes
 func (s *Server) mapRequestError(err error) uint8 {
 	if err == nil {
-		return repSuccess
+		return RepSuccess
 	}
 
 	errStr := strings.ToLower(err.Error())
 	switch {
 	case strings.Contains(errStr, "unsupported command"):
-		return repCommandNotSupported
+		return RepCommandNotSupported
 	case strings.Contains(errStr, "unsupported address type"):
-		return repAddressNotSupported
+		return RepAddressNotSupported
 	case strings.Contains(errStr, "unsupported socks version"):
-		return repServerFailure
+		return RepServerFailure
 	case strings.Contains(errStr, "invalid reserved field"):
-		return repServerFailure
+		return RepServerFailure
 	default:
-		return repServerFailure
+		return RepServerFailure
 	}
 }
 
@@ -237,7 +240,7 @@ func (s *Server) handleBind(conn net.Conn, req *Request, auth Authenticator) {
 	// Check access control for BIND request
 	if !s.config.AccessControl.Allow(conn.RemoteAddr(), req.RealDest) {
 		s.logf("BIND to %s denied by access control from %s", req.RealDest, conn.RemoteAddr())
-		sendReply(conn, repNotAllowed, nil)
+		sendReply(conn, RepNotAllowed, nil)
 		return
 	}
 
@@ -245,13 +248,13 @@ func (s *Server) handleBind(conn net.Conn, req *Request, auth Authenticator) {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		s.logf("Failed to create bind listener: %v", err)
-		sendReply(conn, repServerFailure, nil)
+		sendReply(conn, RepServerFailure, nil)
 		return
 	}
 	defer listener.Close()
 
 	// Send first reply with bind address
-	if err := sendReply(conn, repSuccess, listener.Addr()); err != nil {
+	if err := sendReply(conn, RepSuccess, listener.Addr()); err != nil {
 		s.logf("Failed to send bind reply: %v", err)
 		return
 	}
@@ -267,13 +270,13 @@ func (s *Server) handleBind(conn net.Conn, req *Request, auth Authenticator) {
 	target, err := listener.Accept()
 	if err != nil {
 		s.logf("Failed to accept bind connection: %v", err)
-		sendReply(conn, repConnectionRefused, nil)
+		sendReply(conn, RepConnectionRefused, nil)
 		return
 	}
 	defer target.Close()
 
 	// Send second reply with actual connection info
-	if err := sendReply(conn, repSuccess, target.RemoteAddr()); err != nil {
+	if err := sendReply(conn, RepSuccess, target.RemoteAddr()); err != nil {
 		s.logf("Failed to send second bind reply: %v", err)
 		return
 	}
@@ -291,7 +294,7 @@ func (s *Server) handleUDPAssociate(conn net.Conn, req *Request, auth Authentica
 	// Check access control for UDP ASSOCIATE request
 	if !s.config.AccessControl.Allow(conn.RemoteAddr(), req.RealDest) {
 		s.logf("UDP ASSOCIATE to %s denied by access control from %s", req.RealDest, conn.RemoteAddr())
-		sendReply(conn, repNotAllowed, nil)
+		sendReply(conn, RepNotAllowed, nil)
 		return
 	}
 
@@ -299,20 +302,20 @@ func (s *Server) handleUDPAssociate(conn net.Conn, req *Request, auth Authentica
 	udpAddr, err := net.ResolveUDPAddr("udp", ":0")
 	if err != nil {
 		s.logf("Failed to resolve UDP address: %v", err)
-		sendReply(conn, repServerFailure, nil)
+		sendReply(conn, RepServerFailure, nil)
 		return
 	}
 
 	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
 		s.logf("Failed to create UDP socket: %v", err)
-		sendReply(conn, repServerFailure, nil)
+		sendReply(conn, RepServerFailure, nil)
 		return
 	}
 	defer udpConn.Close()
 
 	// Send reply with UDP relay address
-	if err := sendReply(conn, repSuccess, udpConn.LocalAddr()); err != nil {
+	if err := sendReply(conn, RepSuccess, udpConn.LocalAddr()); err != nil {
 		s.logf("Failed to send UDP associate reply: %v", err)
 		return
 	}
