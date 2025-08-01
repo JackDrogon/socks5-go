@@ -16,13 +16,13 @@ const (
 	atypeDomain = 0x03
 	atypeIPv6   = 0x04
 
-	repSuccess              = 0x00
-	repServerFailure        = 0x01
-	repNotAllowed           = 0x02
-	repNetworkUnreachable   = 0x03
-	repHostUnreachable      = 0x04
-	repConnectionRefused    = 0x05
+	repSuccess             = 0x00
+	repServerFailure       = 0x01
+	repNotAllowed          = 0x02
+	repNetworkUnreachable  = 0x03
+	repHostUnreachable     = 0x04
+	repConnectionRefused   = 0x05
 	repTTLExpired          = 0x06
-	repCommandNotSupported  = 0x07
-	repAddressNotSupported  = 0x08
+	repCommandNotSupported = 0x07
+	repAddressNotSupported = 0x08
 )

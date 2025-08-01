@@ -75,7 +75,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	request, err := NewRequest(conn)
 	if err != nil {
 		s.logf("Failed to parse request: %v", err)
-		
+
 		// Map specific errors to appropriate reply codes
 		replyCode := s.mapRequestError(err)
 		sendReply(conn, replyCode, nil)
@@ -109,7 +109,7 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 	if numMethods < 1 || numMethods > 255 {
 		return nil, fmt.Errorf("invalid NMETHODS value: %d (must be 1-255)", numMethods)
 	}
-	
+
 	methods := make([]byte, numMethods)
 	if _, err := io.ReadFull(conn, methods); err != nil {
 		return nil, fmt.Errorf("failed to read auth methods: %w", err)
@@ -147,11 +147,11 @@ func (s *Server) handleConnect(conn net.Conn, req *Request, auth Authenticator) 
 	target, err := s.config.Dial("tcp", req.RealDest)
 	if err != nil {
 		s.logf("Failed to connect to %s: %v", req.RealDest, err)
-		
+
 		// Map network errors to appropriate SOCKS5 reply codes
 		replyCode := s.mapNetworkError(err)
 		sendReply(conn, replyCode, nil)
-		
+
 		// RFC 1928: close connection within 10 seconds of failure
 		time.AfterFunc(10*time.Second, func() {
 			conn.Close()
@@ -176,7 +176,7 @@ func (s *Server) mapNetworkError(err error) uint8 {
 	}
 
 	errStr := err.Error()
-	
+
 	// Check for specific error types
 	errStrLower := strings.ToLower(errStr)
 	switch {
@@ -219,14 +219,14 @@ func (s *Server) mapRequestError(err error) uint8 {
 func (s *Server) handleBind(conn net.Conn, req *Request, auth Authenticator) {
 	// RFC 1928: Use DST.ADDR and DST.PORT in evaluating the BIND request
 	s.logf("BIND request for destination %s", req.RealDest)
-	
+
 	// Check access control for BIND request
 	if !s.config.AccessControl.Allow(conn.RemoteAddr(), req.RealDest) {
 		s.logf("BIND to %s denied by access control from %s", req.RealDest, conn.RemoteAddr())
 		sendReply(conn, repNotAllowed, nil)
 		return
 	}
-	
+
 	// Create a listener for incoming connections
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -273,14 +273,14 @@ func (s *Server) handleBind(conn net.Conn, req *Request, auth Authenticator) {
 func (s *Server) handleUDPAssociate(conn net.Conn, req *Request, auth Authenticator) {
 	// RFC 1928: Use DST.ADDR and DST.PORT to evaluate UDP ASSOCIATE request
 	s.logf("UDP ASSOCIATE request for destination %s", req.RealDest)
-	
+
 	// Check access control for UDP ASSOCIATE request
 	if !s.config.AccessControl.Allow(conn.RemoteAddr(), req.RealDest) {
 		s.logf("UDP ASSOCIATE to %s denied by access control from %s", req.RealDest, conn.RemoteAddr())
 		sendReply(conn, repNotAllowed, nil)
 		return
 	}
-	
+
 	// Create UDP socket for relaying
 	udpAddr, err := net.ResolveUDPAddr("udp", ":0")
 	if err != nil {
@@ -351,7 +351,7 @@ func (s *Server) relayWithEncapsulation(clientConn, targetConn net.Conn, auth Au
 	// Client -> Target (unwrap then forward)
 	go func() {
 		defer func() { done <- struct{}{} }()
-		
+
 		buffer := make([]byte, 32*1024)
 		for {
 			n, err := clientConn.Read(buffer)
@@ -376,7 +376,7 @@ func (s *Server) relayWithEncapsulation(clientConn, targetConn net.Conn, auth Au
 	// Target -> Client (wrap then forward)
 	go func() {
 		defer func() { done <- struct{}{} }()
-		
+
 		buffer := make([]byte, 32*1024)
 		for {
 			n, err := targetConn.Read(buffer)

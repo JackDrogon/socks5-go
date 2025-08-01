@@ -46,6 +46,8 @@ sleep 2
 # Run test suites
 run_test_suite "Basic Functionality Tests" "run_tests.sh"
 run_test_suite "Protocol Compliance Tests" "protocol_test.sh"
+run_test_suite "RFC 1928 Compliance Tests" "rfc_compliance_test.sh"
+run_test_suite "Advanced Features Tests" "advanced_features_test.sh"
 
 # Only run benchmark if bc is available
 if command -v bc >/dev/null 2>&1; then

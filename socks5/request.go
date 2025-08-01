@@ -96,7 +96,7 @@ func readAddrSpec(conn io.ReadWriter, addrType uint8) (*AddrSpec, error) {
 		if domainLen == 0 {
 			return nil, fmt.Errorf("invalid domain name length: 0")
 		}
-		
+
 		domain := make([]byte, domainLen)
 		if _, err := io.ReadFull(conn, domain); err != nil {
 			return nil, fmt.Errorf("failed to read domain: %w", err)

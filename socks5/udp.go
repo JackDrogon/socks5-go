@@ -37,6 +37,11 @@ func parseUDPHeader(data []byte) (*UDPHeader, error) {
 		AddrType: data[3],
 	}
 
+	// RFC 1928: RSV field MUST be X'0000'
+	if header.Reserved != 0x0000 {
+		return nil, fmt.Errorf("invalid UDP RSV field: expected 0x0000, got 0x%04X", header.Reserved)
+	}
+
 	offset := 4
 	var addrLen int
 
@@ -77,7 +82,7 @@ func buildUDPHeader(addrType uint8, addr []byte, port uint16, data []byte) []byt
 	case atypeIPv4:
 		headerLen = 4 + 4 + 2 // RSV + FRAG + ATYP + IPv4 + PORT
 	case atypeIPv6:
-		headerLen = 4 + 16 + 2 // RSV + FRAG + ATYP + IPv6 + PORT  
+		headerLen = 4 + 16 + 2 // RSV + FRAG + ATYP + IPv6 + PORT
 	case atypeDomain:
 		headerLen = 4 + 1 + len(addr) + 2 // RSV + FRAG + ATYP + LEN + DOMAIN + PORT
 	}
@@ -150,7 +155,7 @@ func (s *Server) handleUDPRelay(udpConn *net.UDPConn, clientAddr net.Addr) {
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
-		
+
 		for range ticker.C {
 			now := time.Now()
 			for key, assoc := range associations {
@@ -240,7 +245,7 @@ func (s *Server) handleUDPRelayEncapsulated(udpConn *net.UDPConn, clientAddr net
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
-		
+
 		for range ticker.C {
 			now := time.Now()
 			for key, assoc := range associations {

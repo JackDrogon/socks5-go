@@ -12,7 +12,7 @@ type Authenticator interface {
 	SupportsEncapsulation() bool
 	// WrapData encapsulates data for transmission (if supported)
 	WrapData(data []byte) ([]byte, error)
-	// UnwrapData decapsulates received data (if supported)  
+	// UnwrapData decapsulates received data (if supported)
 	UnwrapData(data []byte) ([]byte, error)
 }
 
@@ -118,7 +118,7 @@ func (a GSSAPIAuthenticator) Authenticate(conn io.ReadWriter) error {
 	// This is a simplified GSSAPI implementation
 	// In a real implementation, this would handle the full GSSAPI negotiation
 	// including mechanism selection, context establishment, etc.
-	
+
 	if !a.AcceptAll {
 		return fmt.Errorf("GSSAPI authentication not fully implemented")
 	}
@@ -129,7 +129,7 @@ func (a GSSAPIAuthenticator) Authenticate(conn io.ReadWriter) error {
 	// 2. Process with GSS_Accept_sec_context()
 	// 3. Handle context establishment
 	// 4. Validate credentials
-	
+
 	// Read any incoming GSSAPI token (simplified)
 	buffer := make([]byte, 1024)
 	_, err := conn.Read(buffer)
@@ -159,21 +159,21 @@ func (a GSSAPIAuthenticator) WrapData(data []byte) ([]byte, error) {
 	// In a real implementation, this would use GSS_Wrap() to provide
 	// integrity and/or confidentiality protection for the data
 	// For demonstration purposes, we'll add a simple header
-	
+
 	// Format: [LENGTH:4][WRAPPED_DATA:LENGTH]
 	// This is a simplified version - real GSSAPI would use proper tokens
 	wrappedData := make([]byte, 4+len(data))
-	
+
 	// Length in network byte order
 	length := uint32(len(data))
 	wrappedData[0] = byte(length >> 24)
 	wrappedData[1] = byte(length >> 16)
 	wrappedData[2] = byte(length >> 8)
 	wrappedData[3] = byte(length)
-	
+
 	// Copy original data
 	copy(wrappedData[4:], data)
-	
+
 	return wrappedData, nil
 }
 
@@ -188,17 +188,17 @@ func (a GSSAPIAuthenticator) UnwrapData(data []byte) ([]byte, error) {
 
 	// In a real implementation, this would use GSS_Unwrap() to verify
 	// and decrypt the data. Here we just parse our simple format.
-	
+
 	// Read length
 	length := uint32(data[0])<<24 | uint32(data[1])<<16 | uint32(data[2])<<8 | uint32(data[3])
-	
+
 	if len(data) < int(4+length) {
 		return nil, fmt.Errorf("GSSAPI wrapped data length mismatch")
 	}
-	
+
 	// Return unwrapped data
 	unwrappedData := make([]byte, length)
 	copy(unwrappedData, data[4:4+length])
-	
+
 	return unwrappedData, nil
 }

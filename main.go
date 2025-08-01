@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	config := &socks5.Config{}
-	
+
 	if *username != "" && *password != "" {
 		credentials := socks5.StaticCredentials{
 			*username: *password,
@@ -38,7 +38,7 @@ func main() {
 	defer listener.Close()
 
 	log.Printf("SOCKS5 server listening on %s", *addr)
-	
+
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
