@@ -1,9 +1,23 @@
-# Go SOCKS5 Proxy Server
+# Go SOCKS5 Proxy Server & Client
 
-A complete SOCKS5 proxy server implementation in Go following RFC 1928 specifications.
+A complete SOCKS5 proxy server and client implementation in Go following RFC 1928 specifications.
+
+## Quick Start
+
+```bash
+# Build everything
+make all
+
+# Start the server
+make dev-server
+
+# In another terminal, run client examples
+make run-examples
+```
 
 ## Features
 
+### Server
 - **RFC 1928 Compliant**: Full implementation of SOCKS Protocol Version 5
 - **Authentication Methods**:
   - No authentication (0x00)
@@ -22,31 +36,62 @@ A complete SOCKS5 proxy server implementation in Go following RFC 1928 specifica
   - Enhanced error handling with proper RFC reply codes
   - Connection timeout management (RFC-compliant 10-second cleanup)
   - UDP packet fragmentation handling
+
+### Client
+- **Full RFC 1928 Support**: Complete SOCKS5 client implementation
+- **Authentication Methods**:
+  - No authentication (0x00)
+  - Username/Password authentication (0x02)
+- **Connection Types**:
+  - TCP connections via CONNECT command
+  - UDP connections via UDP ASSOCIATE command
+- **Address Types**: IPv4, IPv6, and domain name resolution
+- **Integration-Friendly**: Easy integration with HTTP clients and custom applications
 - **Go Best Practices**: Clean, idiomatic Go code with proper error handling
 
 ## Usage
 
-### Basic Usage (No Authentication)
+### Server Usage
+
+#### Building the Server
 
 ```bash
-go run main.go
+# Build using Makefile
+make server
+
+# Or build manually
+go build -o build/socks5-server bin/socks5-server.go
+```
+
+#### Basic Usage (No Authentication)
+
+```bash
+# Run the built binary
+./build/socks5-server
+
+# Or use Makefile
+make dev-server
 ```
 
 This starts a SOCKS5 server on port 1080 with no authentication required.
 
-### With Username/Password Authentication
+#### With Username/Password Authentication
 
 ```bash
-go run main.go -user myuser -pass mypass
+# Run with authentication
+./build/socks5-server -user myuser -pass mypass
+
+# Or use Makefile
+make dev-server-auth
 ```
 
-### Custom Port
+#### Custom Port
 
 ```bash
-go run main.go -addr :8080
+./build/socks5-server -addr :8080
 ```
 
-## Testing
+#### Testing the Server
 
 Test the server using curl:
 
@@ -57,6 +102,102 @@ curl --socks5 localhost:1080 https://httpbin.org/ip
 # Test with username/password
 curl --socks5-hostname myuser:mypass@localhost:1080 https://httpbin.org/ip
 ```
+
+### Client Usage
+
+#### Building and Running Examples
+
+```bash
+# Build all examples
+make examples
+
+# Or build specific example
+go build -o build/examples/http_client examples/http_client.go
+
+# Run examples (requires server to be running)
+make run-examples
+```
+
+#### Available Examples
+
+1. **HTTP Client** (`examples/http_client.go`)
+   ```bash
+   go run examples/http_client.go
+   ```
+
+2. **HTTP Client with Authentication** (`examples/http_client_auth.go`)
+   ```bash
+   go run examples/http_client_auth.go
+   ```
+
+3. **Direct TCP Connection** (`examples/tcp_client.go`)
+   ```bash
+   go run examples/tcp_client.go
+   ```
+
+4. **UDP Connection** (`examples/udp_client.go`)
+   ```bash
+   go run examples/udp_client.go
+   ```
+
+#### Library Usage
+
+##### Basic HTTP Client
+
+```go
+package main
+
+import (
+    "fmt"
+    "io"
+    "net/http"
+    "time"
+    "github.com/JackDrogon/socks5-go/socks5"
+)
+
+func main() {
+    config := &socks5.ClientConfig{
+        ServerAddr: "localhost:1080",
+        Timeout:    30 * time.Second,
+    }
+    
+    client, err := socks5.NewClient(config)
+    if err != nil {
+        panic(err)
+    }
+    
+    httpClient := &http.Client{
+        Transport: &http.Transport{
+            Dial: client.Dial,
+        },
+        Timeout: 30 * time.Second,
+    }
+    
+    resp, err := httpClient.Get("https://httpbin.org/ip")
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Printf("Response: %s\n", body)
+}
+```
+
+##### With Authentication
+
+```go
+config := &socks5.ClientConfig{
+    ServerAddr: "localhost:1080",
+    Credentials: &socks5.UserPassCredentials{
+        Username: "myuser",
+        Password: "mypass",
+    },
+    Timeout: 30 * time.Second,
+}
+```
+
+See the `examples/` directory for complete working examples.
 
 ## Advanced Configuration
 
@@ -100,17 +241,38 @@ config := &socks5.Config{
 
 ### Package Structure
 
-- `main.go`: Server entry point with command-line interface
-- `socks5/server.go`: Core server implementation and command handlers
-- `socks5/auth.go`: Authentication methods (NoAuth, UserPass, GSSAPI)
-- `socks5/request.go`: Request parsing for all address types
-- `socks5/reply.go`: RFC-compliant reply generation
-- `socks5/udp.go`: UDP ASSOCIATE command implementation
-- `socks5/access.go`: Access control system
-- `socks5/constants.go`: Protocol constants and reply codes
+```
+socks5-go/
+├── bin/                     # Server executables
+│   └── socks5-server.go    # SOCKS5 server main
+├── build/                   # Build output (created by Makefile)
+│   ├── socks5-server       # Server binary
+│   └── examples/           # Client example binaries
+├── examples/               # Client usage examples
+│   ├── http_client.go      # HTTP client example
+│   ├── http_client_auth.go # HTTP client with auth
+│   ├── tcp_client.go       # Direct TCP connection
+│   ├── udp_client.go       # UDP connection example
+│   └── README.md           # Examples documentation
+├── socks5/                 # Core library
+│   ├── server.go           # Server implementation
+│   ├── client.go           # Client implementation
+│   ├── udp_client.go       # UDP client wrapper
+│   ├── auth.go             # Authentication methods
+│   ├── request.go          # Request parsing
+│   ├── reply.go            # Reply generation
+│   ├── udp.go              # UDP ASSOCIATE support
+│   ├── access.go           # Access control
+│   └── constants.go        # Protocol constants
+├── tests/                  # Integration tests
+├── Makefile               # Build and development scripts
+├── go.mod                 # Go module definition
+└── README.md              # This file
+```
 
 ### Key Components
 
+#### Server
 - **Server**: Manages connections and orchestrates the SOCKS5 protocol
 - **Authenticator Interface**: Pluggable authentication system
 - **Request/Reply**: RFC-compliant message parsing and generation
@@ -118,6 +280,71 @@ config := &socks5.Config{
 - **Command Handlers**: CONNECT, BIND, and UDP ASSOCIATE implementations
 - **Access Control**: Configurable connection filtering
 - **Error Mapping**: Network errors to proper SOCKS5 reply codes
+
+#### Client
+- **Client**: SOCKS5 proxy client with full RFC 1928 support
+- **Connection Management**: TCP and UDP connection handling through proxy
+- **Authentication**: Support for No Auth and Username/Password methods
+- **Address Resolution**: IPv4, IPv6, and domain name support
+- **Error Handling**: Comprehensive SOCKS5 reply code mapping
+- **net.Conn Interface**: Standard Go network interface compatibility
+
+## Build and Development
+
+### Using the Makefile
+
+The project includes a comprehensive Makefile for building, testing, and development:
+
+```bash
+# Build everything
+make all
+
+# Build only the server
+make server
+
+# Build only the client examples
+make examples
+
+# Clean build artifacts
+make clean
+
+# Run tests
+make test
+
+# Run tests with coverage
+make test-coverage
+
+# Format code
+make fmt
+
+# Start development server
+make dev-server
+
+# Start server with authentication
+make dev-server-auth
+
+# Run all examples (requires server running)
+make run-examples
+
+# Build release binaries for multiple platforms
+make release
+
+# Show all available targets
+make help
+```
+
+### Manual Building
+
+```bash
+# Build server manually
+go build -o build/socks5-server bin/socks5-server.go
+
+# Build specific example
+go build -o build/examples/http_client examples/http_client.go
+
+# Build with optimizations
+go build -ldflags "-w -s" -o build/socks5-server bin/socks5-server.go
+```
 
 ## Configuration
 
