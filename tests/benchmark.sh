@@ -16,14 +16,14 @@ echo -e "${YELLOW}SOCKS5 Performance Benchmark${NC}"
 echo "=================================="
 
 cleanup() {
-    pkill -f "$BINARY" 2>/dev/null || true
-    sleep 1
+	pkill -f "$BINARY" 2>/dev/null || true
+	sleep 1
 }
 
 trap cleanup EXIT
 
 echo -e "\n${YELLOW}Starting benchmark server...${NC}"
-$BINARY -addr :3080 > benchmark.log 2>&1 &
+$BINARY -addr :3080 >benchmark.log 2>&1 &
 sleep 3
 
 echo -e "\n${YELLOW}Test 1: Sequential Requests${NC}"
@@ -31,8 +31,8 @@ echo "Measuring time for 10 sequential requests..."
 
 start_time=$(date +%s.%N)
 for i in {1..10}; do
-    curl --socks5-hostname localhost:3080 https://httpbin.org/ip --connect-timeout 10 -s > /dev/null
-    echo -n "."
+	curl --socks5-hostname localhost:3080 https://httpbin.org/ip --connect-timeout 10 -s >/dev/null
+	echo -n "."
 done
 end_time=$(date +%s.%N)
 
@@ -45,7 +45,7 @@ echo "Measuring time for 10 concurrent requests..."
 
 start_time=$(date +%s.%N)
 for i in {1..10}; do
-    curl --socks5-hostname localhost:3080 https://httpbin.org/ip --connect-timeout 15 -s > /dev/null &
+	curl --socks5-hostname localhost:3080 https://httpbin.org/ip --connect-timeout 15 -s >/dev/null &
 done
 wait
 end_time=$(date +%s.%N)
@@ -62,7 +62,7 @@ echo "Testing persistent connections..."
 
 start_time=$(date +%s.%N)
 for i in {1..5}; do
-    curl --socks5-hostname localhost:3080 https://httpbin.org/get --connect-timeout 10 -s > /dev/null
+	curl --socks5-hostname localhost:3080 https://httpbin.org/get --connect-timeout 10 -s >/dev/null
 done
 end_time=$(date +%s.%N)
 
@@ -73,7 +73,7 @@ echo -e "\n${YELLOW}Test 4: Large Data Transfer${NC}"
 echo "Testing large data transfer through proxy..."
 
 start_time=$(date +%s.%N)
-curl --socks5-hostname localhost:3080 https://httpbin.org/bytes/1024 --connect-timeout 15 -s > /dev/null
+curl --socks5-hostname localhost:3080 https://httpbin.org/bytes/1024 --connect-timeout 15 -s >/dev/null
 end_time=$(date +%s.%N)
 
 transfer_time=$(echo "$end_time - $start_time" | bc -l)
@@ -81,13 +81,13 @@ echo -e "${GREEN}Large transfer time:${NC} ${transfer_time}s"
 
 echo -e "\n${YELLOW}Test 5: Authentication Overhead${NC}"
 cleanup
-$BINARY -addr :3081 -user bench -pass test > benchmark_auth.log 2>&1 &
+$BINARY -addr :3081 -user bench -pass test >benchmark_auth.log 2>&1 &
 sleep 2
 
 echo "Testing authentication overhead..."
 start_time=$(date +%s.%N)
 for i in {1..5}; do
-    curl --socks5 bench:test@localhost:3081 https://httpbin.org/ip --connect-timeout 10 -s > /dev/null
+	curl --socks5 bench:test@localhost:3081 https://httpbin.org/ip --connect-timeout 10 -s >/dev/null
 done
 end_time=$(date +%s.%N)
 
@@ -106,9 +106,9 @@ echo -e "Large transfer: ${transfer_time}s"
 # Check for any errors
 ERROR_COUNT=$(grep -c "error\|Error\|ERROR" benchmark*.log 2>/dev/null || echo "0")
 if [ "$ERROR_COUNT" -eq 0 ]; then
-    echo -e "\n${GREEN}✓ No errors during benchmark${NC}"
+	echo -e "\n${GREEN}✓ No errors during benchmark${NC}"
 else
-    echo -e "\n${YELLOW}⚠ Found $ERROR_COUNT errors in logs${NC}"
+	echo -e "\n${YELLOW}⚠ Found $ERROR_COUNT errors in logs${NC}"
 fi
 
 echo -e "\n${GREEN}Benchmark completed!${NC}"

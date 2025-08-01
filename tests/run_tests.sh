@@ -14,18 +14,18 @@ BINARY="../go-socks5"
 TIMEOUT=10
 
 print_status() {
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓${NC} $1"
-    else
-        echo -e "${RED}✗${NC} $1"
-        return 1
-    fi
+	if [ $? -eq 0 ]; then
+		echo -e "${GREEN}✓${NC} $1"
+	else
+		echo -e "${RED}✗${NC} $1"
+		return 1
+	fi
 }
 
 cleanup() {
-    echo -e "\n${YELLOW}Cleaning up...${NC}"
-    pkill -f "$BINARY" 2>/dev/null || true
-    sleep 1
+	echo -e "\n${YELLOW}Cleaning up...${NC}"
+	pkill -f "$BINARY" 2>/dev/null || true
+	sleep 1
 }
 
 trap cleanup EXIT
@@ -35,19 +35,19 @@ echo "=================================="
 
 # Build if needed
 if [ ! -f "$BINARY" ]; then
-    echo "Building SOCKS5 server..."
-    cd .. && go build && cd tests
-    print_status "Build completed"
+	echo "Building SOCKS5 server..."
+	cd .. && go build && cd tests
+	print_status "Build completed"
 fi
 
 echo -e "\n${YELLOW}Test 1: Basic SOCKS5 Functionality (No Auth)${NC}"
 echo "Starting server on port 1080..."
-$BINARY -addr :1080 > test1.log 2>&1 &
+$BINARY -addr :1080 >test1.log 2>&1 &
 SERVER1_PID=$!
 sleep 2
 
 # Test basic connectivity
-curl --socks5-hostname localhost:1080 https://httpbin.org/ip --connect-timeout $TIMEOUT -s > /dev/null
+curl --socks5-hostname localhost:1080 https://httpbin.org/ip --connect-timeout $TIMEOUT -s >/dev/null
 print_status "Basic SOCKS5 connection"
 
 # Test with different endpoints
@@ -67,54 +67,54 @@ sleep 1
 
 echo -e "\n${YELLOW}Test 2: Username/Password Authentication${NC}"
 echo "Starting server with authentication on port 1081..."
-$BINARY -addr :1081 -user testuser -pass testpass > test2.log 2>&1 &
+$BINARY -addr :1081 -user testuser -pass testpass >test2.log 2>&1 &
 SERVER2_PID=$!
 sleep 2
 
 # Test successful authentication
-curl --socks5 testuser:testpass@localhost:1081 https://httpbin.org/ip --connect-timeout $TIMEOUT -s > /dev/null
+curl --socks5 testuser:testpass@localhost:1081 https://httpbin.org/ip --connect-timeout $TIMEOUT -s >/dev/null
 print_status "Valid credentials accepted"
 
 # Test failed authentication
-set +e  # Temporarily disable exit on error
-curl --socks5 wronguser:wrongpass@localhost:1081 https://httpbin.org/ip --connect-timeout 5 -s > /dev/null 2>&1
+set +e # Temporarily disable exit on error
+curl --socks5 wronguser:wrongpass@localhost:1081 https://httpbin.org/ip --connect-timeout 5 -s >/dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo -e "${GREEN}✓${NC} Invalid credentials rejected"
+	echo -e "${GREEN}✓${NC} Invalid credentials rejected"
 else
-    echo -e "${RED}✗${NC} Invalid credentials rejected"
+	echo -e "${RED}✗${NC} Invalid credentials rejected"
 fi
 
 # Test no credentials provided to auth server
-curl --socks5-hostname localhost:1081 https://httpbin.org/ip --connect-timeout 5 -s > /dev/null 2>&1
+curl --socks5-hostname localhost:1081 https://httpbin.org/ip --connect-timeout 5 -s >/dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo -e "${GREEN}✓${NC} No credentials rejected when auth required"
+	echo -e "${GREEN}✓${NC} No credentials rejected when auth required"
 else
-    echo -e "${RED}✗${NC} No credentials rejected when auth required"
+	echo -e "${RED}✗${NC} No credentials rejected when auth required"
 fi
-set -e  # Re-enable exit on error
+set -e # Re-enable exit on error
 
 kill $SERVER2_PID 2>/dev/null || true
 sleep 1
 
 echo -e "\n${YELLOW}Test 3: Performance and Stress Test${NC}"
 echo "Starting server on port 1082..."
-$BINARY -addr :1082 > test3.log 2>&1 &
+$BINARY -addr :1082 >test3.log 2>&1 &
 SERVER3_PID=$!
 sleep 2
 
 # Test multiple concurrent connections
 echo "Testing concurrent connections..."
 for i in {1..5}; do
-    curl --socks5-hostname localhost:1082 https://httpbin.org/ip --connect-timeout $TIMEOUT -s > /dev/null &
+	curl --socks5-hostname localhost:1082 https://httpbin.org/ip --connect-timeout $TIMEOUT -s >/dev/null &
 done
 wait
 print_status "Concurrent connections handled"
 
 # Test different protocols
-curl --socks5-hostname localhost:1082 http://httpbin.org/get --connect-timeout $TIMEOUT -s > /dev/null
+curl --socks5-hostname localhost:1082 http://httpbin.org/get --connect-timeout $TIMEOUT -s >/dev/null
 print_status "HTTP through SOCKS5"
 
-curl --socks5-hostname localhost:1082 https://httpbin.org/get --connect-timeout $TIMEOUT -s > /dev/null
+curl --socks5-hostname localhost:1082 https://httpbin.org/get --connect-timeout $TIMEOUT -s >/dev/null
 print_status "HTTPS through SOCKS5"
 
 kill $SERVER3_PID 2>/dev/null || true
@@ -125,9 +125,9 @@ echo "=================================="
 # Check logs for errors
 echo "Checking server logs for errors..."
 if grep -q "Failed to" test*.log 2>/dev/null; then
-    echo -e "${YELLOW}⚠${NC} Some connection failures found in logs (this may be expected for negative tests)"
+	echo -e "${YELLOW}⚠${NC} Some connection failures found in logs (this may be expected for negative tests)"
 else
-    echo -e "${GREEN}✓${NC} No unexpected errors in server logs"
+	echo -e "${GREEN}✓${NC} No unexpected errors in server logs"
 fi
 
 # Count successful connections

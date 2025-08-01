@@ -1202,3 +1202,264 @@ func (m *mockListener) Addr() net.Addr {
 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:1080")
 	return addr
 }
+
+// Tests for RFC 1928 compliance fixes
+
+func TestAuthenticateInvalidSOCKSVersion(t *testing.T) {
+	server, _ := New(nil)
+
+	testCases := []struct {
+		name    string
+		version byte
+		methods []byte
+	}{
+		{"SOCKS version 4", 0x04, []byte{0x01, 0x00}},
+		{"SOCKS version 6", 0x06, []byte{0x01, 0x00}},
+		{"SOCKS version 0", 0x00, []byte{0x01, 0x00}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			authRequest := []byte{tc.version}
+			authRequest = append(authRequest, tc.methods...)
+
+			conn := &mockConn{readData: authRequest}
+			_, err := server.authenticate(conn)
+
+			// Should fail with unsupported version error
+			if err == nil {
+				t.Errorf("Expected error for unsupported SOCKS version %d", tc.version)
+			}
+
+			if !strings.Contains(err.Error(), "unsupported SOCKS version") {
+				t.Errorf("Expected 'unsupported SOCKS version' error, got: %v", err)
+			}
+
+			// Should send rejection response
+			if len(conn.writeData) < 2 {
+				t.Errorf("Expected server to send rejection response")
+			} else if conn.writeData[0] != socks5Version || conn.writeData[1] != authMethodNoAcceptable {
+				t.Errorf("Expected rejection response [0x05, 0xFF], got [0x%02X, 0x%02X]", 
+					conn.writeData[0], conn.writeData[1])
+			}
+		})
+	}
+}
+
+func TestAuthenticateNMethodsZero(t *testing.T) {
+	server, _ := New(nil)
+
+	// RFC 1928: NMETHODS = 0 is invalid
+	authRequest := []byte{0x05, 0x00} // Version 5, 0 methods
+
+	conn := &mockConn{readData: authRequest}
+	_, err := server.authenticate(conn)
+
+	// Should fail
+	if err == nil {
+		t.Errorf("Expected error for NMETHODS = 0")
+	}
+
+	if !strings.Contains(err.Error(), "invalid NMETHODS value: 0") {
+		t.Errorf("Expected 'invalid NMETHODS value: 0' error, got: %v", err)
+	}
+
+	// Should send rejection response
+	if len(conn.writeData) < 2 {
+		t.Errorf("Expected server to send rejection response")
+	} else if conn.writeData[1] != authMethodNoAcceptable {
+		t.Errorf("Expected rejection response with code 0xFF, got 0x%02X", conn.writeData[1])
+	}
+}
+
+func TestGSSAPIAuthenticatorIntegration(t *testing.T) {
+	// Test that GSSAPI authenticator can be used in server config
+	gssapiAuth := GSSAPIAuthenticator{AcceptAll: true}
+	
+	config := &Config{
+		AuthMethods: []Authenticator{gssapiAuth},
+	}
+	
+	server, err := New(config)
+	if err != nil {
+		t.Fatalf("Failed to create server with GSSAPI auth: %v", err)
+	}
+
+	// Verify GSSAPI is registered
+	if _, ok := server.authMethods[authMethodGSSAPI]; !ok {
+		t.Errorf("GSSAPI authenticator not registered in server")
+	}
+
+	// Test GSSAPI authentication with mock GSSAPI token
+	authRequest := []byte{
+		0x05, // Version
+		0x01, // 1 method
+		0x01, // GSSAPI method
+	}
+	
+	// Add mock GSSAPI token that the authenticator will try to read
+	gssapiToken := []byte("mock_gssapi_token_data")
+	authRequest = append(authRequest, gssapiToken...)
+
+	conn := &mockConn{readData: authRequest}
+	auth, err := server.authenticate(conn)
+	
+	if err != nil {
+		t.Errorf("GSSAPI authentication failed: %v", err)
+	}
+
+	if auth == nil {
+		t.Errorf("Expected authenticator to be returned")
+	} else if auth.GetCode() != authMethodGSSAPI {
+		t.Errorf("Expected GSSAPI authenticator (code %d), got code %d", authMethodGSSAPI, auth.GetCode())
+	}
+}
+
+func TestRequestValidationReservedField(t *testing.T) {
+	// Test that non-zero reserved field is rejected
+	requestData := []byte{
+		0x05, // Version
+		0x01, // Command (CONNECT)
+		0x01, // Reserved (should be 0x00) - THIS IS THE BUG WE'RE TESTING
+		0x01, // Address type (IPv4)
+		127, 0, 0, 1, // IPv4 address (127.0.0.1)
+		0x00, 0x50, // Port 80
+	}
+
+	buf := bytes.NewBuffer(requestData)
+	_, err := NewRequest(buf)
+
+	if err == nil {
+		t.Errorf("Expected error for non-zero reserved field")
+	}
+
+	if !strings.Contains(err.Error(), "invalid reserved field") {
+		t.Errorf("Expected 'invalid reserved field' error, got: %v", err)
+	}
+}
+
+func TestRequestValidationUnsupportedCommand(t *testing.T) {
+	// Test that unsupported commands are rejected
+	requestData := []byte{
+		0x05, // Version
+		0x99, // Command (unsupported)
+		0x00, // Reserved
+		0x01, // Address type (IPv4)
+		127, 0, 0, 1, // IPv4 address (127.0.0.1)
+		0x00, 0x50, // Port 80
+	}
+
+	buf := bytes.NewBuffer(requestData)
+	_, err := NewRequest(buf)
+
+	if err == nil {
+		t.Errorf("Expected error for unsupported command")
+	}
+
+	if !strings.Contains(err.Error(), "unsupported command") {
+		t.Errorf("Expected 'unsupported command' error, got: %v", err)
+	}
+}
+
+func TestRequestValidationUnsupportedAddressType(t *testing.T) {
+	// Test that unsupported address types are rejected
+	requestData := []byte{
+		0x05, // Version
+		0x01, // Command (CONNECT)
+		0x00, // Reserved
+		0x99, // Address type (unsupported)
+		127, 0, 0, 1, // Address data
+		0x00, 0x50, // Port 80
+	}
+
+	buf := bytes.NewBuffer(requestData)
+	_, err := NewRequest(buf)
+
+	if err == nil {
+		t.Errorf("Expected error for unsupported address type")
+	}
+
+	if !strings.Contains(err.Error(), "unsupported address type") {
+		t.Errorf("Expected 'unsupported address type' error, got: %v", err)
+	}
+}
+
+func TestDomainNameZeroLength(t *testing.T) {
+	// Test that zero-length domain names are rejected
+	requestData := []byte{
+		0x05, // Version
+		0x01, // Command (CONNECT)
+		0x00, // Reserved
+		0x03, // Address type (Domain)
+		0x00, // Domain length (0 - invalid!)
+		0x00, 0x50, // Port 80
+	}
+
+	buf := bytes.NewBuffer(requestData)
+	_, err := NewRequest(buf)
+
+	if err == nil {
+		t.Errorf("Expected error for zero-length domain name")
+	}
+
+	if !strings.Contains(err.Error(), "invalid domain name length: 0") {
+		t.Errorf("Expected 'invalid domain name length: 0' error, got: %v", err)
+	}
+}
+
+func TestMapNetworkErrorCoverage(t *testing.T) {
+	server, _ := New(nil)
+
+	testCases := []struct {
+		errorMsg     string
+		expectedCode uint8
+	}{
+		{"network is unreachable", repNetworkUnreachable},
+		{"no such host", repHostUnreachable},
+		{"connection refused", repConnectionRefused},
+		{"timeout", repTTLExpired},
+		{"permission denied", repNotAllowed},
+		{"some other error", repServerFailure},
+		{"", repSuccess}, // nil error case
+	}
+
+	for _, tc := range testCases {
+		var err error
+		if tc.errorMsg != "" {
+			err = fmt.Errorf(tc.errorMsg)
+		}
+
+		code := server.mapNetworkError(err)
+		if code != tc.expectedCode {
+			t.Errorf("mapNetworkError(%q) = %d, expected %d", tc.errorMsg, code, tc.expectedCode)
+		}
+	}
+}
+
+func TestMapRequestErrorCoverage(t *testing.T) {
+	server, _ := New(nil)
+
+	testCases := []struct {
+		errorMsg     string
+		expectedCode uint8
+	}{
+		{"unsupported command", repCommandNotSupported},
+		{"unsupported address type", repAddressNotSupported},
+		{"unsupported socks version", repServerFailure},
+		{"invalid reserved field", repServerFailure},
+		{"some other error", repServerFailure},
+		{"", repSuccess}, // nil error case
+	}
+
+	for _, tc := range testCases {
+		var err error
+		if tc.errorMsg != "" {
+			err = fmt.Errorf(tc.errorMsg)
+		}
+
+		code := server.mapRequestError(err)
+		if code != tc.expectedCode {
+			t.Errorf("mapRequestError(%q) = %d, expected %d", tc.errorMsg, code, tc.expectedCode)
+		}
+	}
+}

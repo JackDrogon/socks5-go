@@ -100,13 +100,24 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 		return nil, fmt.Errorf("failed to read auth header: %w", err)
 	}
 
+	// RFC 1928: Check SOCKS version first
 	if header[0] != socks5Version {
+		s.logf("Unsupported SOCKS version: %d", header[0])
+		// Send error response and close connection immediately
+		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
 		return nil, fmt.Errorf("unsupported SOCKS version: %d", header[0])
 	}
 
 	numMethods := int(header[1])
-	// RFC 1928: NMETHODS must be 1-255
-	if numMethods < 1 || numMethods > 255 {
+	// RFC 1928: NMETHODS must be 1-255, 0 is invalid
+	if numMethods == 0 {
+		s.logf("Invalid NMETHODS value: 0")
+		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
+		return nil, fmt.Errorf("invalid NMETHODS value: 0")
+	}
+	if numMethods > 255 {
+		s.logf("Invalid NMETHODS value: %d (too large)", numMethods)
+		conn.Write([]byte{socks5Version, authMethodNoAcceptable})
 		return nil, fmt.Errorf("invalid NMETHODS value: %d (must be 1-255)", numMethods)
 	}
 
@@ -115,18 +126,21 @@ func (s *Server) authenticate(conn net.Conn) (Authenticator, error) {
 		return nil, fmt.Errorf("failed to read auth methods: %w", err)
 	}
 
+	// RFC 1928: Try methods in order of preference
 	for _, method := range methods {
 		if authenticator, ok := s.authMethods[method]; ok {
 			if _, err := conn.Write([]byte{socks5Version, method}); err != nil {
 				return nil, fmt.Errorf("failed to write auth response: %w", err)
 			}
 			if err := authenticator.Authenticate(conn); err != nil {
+				s.logf("Authentication failed for method %d: %v", method, err)
 				return nil, err
 			}
 			return authenticator, nil
 		}
 	}
 
+	// No acceptable methods found
 	if _, err := conn.Write([]byte{socks5Version, authMethodNoAcceptable}); err != nil {
 		return nil, fmt.Errorf("failed to write no acceptable methods: %w", err)
 	}
